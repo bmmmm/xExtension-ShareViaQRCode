@@ -387,16 +387,22 @@
 		switcher.setAttribute('role', 'group');
 		dialog.appendChild(switcher);
 
+		// One block carries the configured width for all three: left to itself the
+		// URL is a single long line and would decide how wide the dialog gets.
+		// The stylesheet still caps it at the viewport, so a generous setting
+		// cannot push the dialog off a narrow screen.
+		const body = document.createElement('div');
+		body.className = 'qr-body';
+		body.style.width = settings.qr_size + 'px';
+		dialog.appendChild(body);
+
 		const canvas = document.createElement('div');
 		canvas.className = 'qr-canvas';
-		// A hard width, but the stylesheet still caps it at the viewport so a
-		// generous setting cannot push the dialog off a narrow screen.
-		canvas.style.width = settings.qr_size + 'px';
-		dialog.appendChild(canvas);
+		body.appendChild(canvas);
 
 		const urlText = document.createElement('p');
 		urlText.className = 'qr-url';
-		dialog.appendChild(urlText);
+		body.appendChild(urlText);
 
 		let note = null;
 		if (model.removed.length > 0) {
@@ -417,7 +423,7 @@
 				note.appendChild(code);
 			});
 			note.appendChild(document.createTextNode(format(parts[1] || '', values)));
-			dialog.appendChild(note);
+			body.appendChild(note);
 		}
 
 		function show(target) {
