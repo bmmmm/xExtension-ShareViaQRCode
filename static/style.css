@@ -1,0 +1,138 @@
+.qr-share .qr-share-button {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	/* Horizontal only: the neighbouring icons get their spacing from margins,
+	   and any vertical padding would stretch the line the button joins. */
+	padding: 0 0.65rem;
+	border: none;
+	background: none;
+	color: inherit;
+	/* Without this the button's line box is taller than the icon. */
+	line-height: 0;
+	cursor: pointer;
+	opacity: 0.7;
+}
+
+.qr-share .qr-share-button:hover,
+.qr-share .qr-share-button:focus {
+	opacity: 1;
+}
+
+/* Above every z-index the base theme and the bundled themes use (max 9999). */
+#share-via-qr-code {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	position: fixed;
+	inset: 0;
+	z-index: 10000;
+	padding: 1rem;
+	background-color: var(--frss-modal-background-color-transparent, #0007);
+}
+
+#share-via-qr-code .qr-dialog {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 0.75rem;
+	position: relative;
+	max-width: 100%;
+	max-height: 100%;
+	overflow: auto;
+	padding: 1.5rem;
+	border-radius: 0.5rem;
+	background-color: var(--frss-background-color, #fff);
+	box-shadow: 0 0.5rem 1.5rem var(--frss-box-shadow-color-transparent, #0003);
+	text-align: center;
+}
+
+#share-via-qr-code .qr-close {
+	position: absolute;
+	top: 0.25rem;
+	right: 0.5rem;
+	padding: 0.25rem 0.5rem;
+	border: none;
+	background: none;
+	color: inherit;
+	font-size: 1.25rem;
+	line-height: 1;
+	cursor: pointer;
+	opacity: 0.6;
+}
+
+#share-via-qr-code .qr-close:hover,
+#share-via-qr-code .qr-close:focus {
+	opacity: 1;
+}
+
+#share-via-qr-code .qr-targets {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: center;
+	gap: 0.5rem;
+	margin-right: 2rem;
+}
+
+#share-via-qr-code .qr-targets button {
+	padding: 0.35rem 0.75rem;
+	border: 1px solid var(--frss-border-color, #999);
+	border-radius: 0.25rem;
+	background-color: transparent;
+	color: inherit;
+	cursor: pointer;
+}
+
+#share-via-qr-code .qr-targets button.active {
+	border-color: currentcolor;
+	background-color: var(--frss-background-color-middle, #eee);
+	font-weight: bold;
+}
+
+/* Size is what decides whether a phone camera locks on from arm's length. */
+#share-via-qr-code .qr-canvas {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: min(70vmin, 26rem);
+	min-height: 6rem;
+}
+
+#share-via-qr-code .qr-canvas svg {
+	width: 100%;
+	height: auto;
+}
+
+#share-via-qr-code .qr-url {
+	max-width: min(70vmin, 26rem);
+	margin: 0;
+	font-family: monospace;
+	font-size: 0.85rem;
+	overflow-wrap: anywhere;
+	word-break: break-all;
+	user-select: all;
+}
+
+#share-via-qr-code .qr-note {
+	max-width: min(70vmin, 26rem);
+	margin: 0;
+	color: var(--frss-font-color-grey-dark, #666);
+	font-size: 0.85rem;
+}
+
+@media (max-width: 840px) {
+	#share-via-qr-code {
+		padding: 0.5rem;
+	}
+
+	#share-via-qr-code .qr-dialog {
+		padding: 1rem;
+	}
+
+	#share-via-qr-code .qr-canvas,
+	#share-via-qr-code .qr-url,
+	#share-via-qr-code .qr-note {
+		width: min(80vmin, 22rem);
+		max-width: 100%;
+	}
+}

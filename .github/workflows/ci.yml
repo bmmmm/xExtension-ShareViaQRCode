@@ -1,0 +1,74 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Git checkout source code
+        uses: actions/checkout@v7
+
+      - name: Check PHP syntax
+        run: |
+          php -v
+          find . -name '*.php' -print0 | xargs -0 -n1 php -l
+
+      - name: Check metadata.json is valid JSON
+        run: |
+          python3 -c "import json,sys; d=json.load(open('metadata.json')); \
+            [sys.exit('missing key: ' + k) for k in ('name','entrypoint','type','version') if k not in d]"
+
+      - name: Check the entrypoint matches the class name
+        run: |
+          entry=$(python3 -c "import json; print(json.load(open('metadata.json'))['entrypoint'])")
+          grep -q "class ${entry}Extension" extension.php \
+            || { echo "extension.php has no class ${entry}Extension"; exit 1; }
+
+      - name: Check JavaScript syntax
+        run: |
+          node --version
+          find static -name '*.js' -print0 | xargs -0 -n1 node --check
+
+      - name: Run the tracking-parameter tests
+        run: |
+          # Pin the reporter: the default differs between Node versions and the
+          # guard below parses its output.
+          node --test --test-reporter=tap tests/strip-tracking.test.js | tee test.log
+          # `node --test` exits 0 on a skipped run, and an empty file still
+          # reports `# pass 1`, so count the cases that are meant to run.
+          expected=$(grep -c '^test(' tests/strip-tracking.test.js)
+          passed=$(sed -n 's/^# pass \([0-9]*\)$/\1/p' test.log)
+          skipped=$(sed -n 's/^# skipped \([0-9]*\)$/\1/p' test.log)
+          echo "expected=${expected} passed=${passed:-0} skipped=${skipped:-0}"
+          test "${passed:-0}" -eq "${expected}" \
+            || { echo "expected ${expected} passing tests, got ${passed:-0}"; exit 1; }
+          test "${skipped:-0}" -eq 0 || { echo 'a test was skipped'; exit 1; }
+
+      - name: Check every translation key used by the extension exists
+        run: |
+          php -r '
+            $keys = [];
+            preg_match_all("/_t\(.ext\.share_via_qr_code\.([a-z_.]+)./", file_get_contents("extension.php"), $m);
+            foreach (glob("i18n/*/ext.php") as $file) {
+              $flat = [];
+              $walk = function (array $node, string $prefix) use (&$walk, &$flat): void {
+                foreach ($node as $key => $value) {
+                  is_array($value) ? $walk($value, "$prefix$key.") : $flat[] = "$prefix$key";
+                }
+              };
+              $walk(require $file, "");
+              foreach ($m[1] as $key) {
+                if (!in_array("share_via_qr_code.$key", $flat, true)) {
+                  fwrite(STDERR, "$file is missing share_via_qr_code.$key\n");
+                  exit(1);
+                }
+              }
+            }
+          '
