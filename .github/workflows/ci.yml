@@ -15,6 +15,14 @@ jobs:
       - name: Git checkout source code
         uses: actions/checkout@v7
 
+      # Pinned to the oldest PHP that FreshRSS 1.26 supports, so a syntax feature
+      # newer than the declared floor fails here rather than at a user's install.
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          coverage: none
+
       - name: Check PHP syntax
         run: |
           php -v
@@ -48,12 +56,16 @@ jobs:
 
       - name: Run the tracking-parameter tests
         run: |
+          set -o pipefail   # otherwise the pipe below reports tee's exit code
           # Pin the reporter: the default differs between Node versions and the
-          # guard below parses its output.
-          node --test --test-reporter=tap tests/strip-tracking.test.js | tee test.log
+          # guard below parses its output. The whole directory, not one file by
+          # name, so a test added tomorrow cannot be silently skipped. The glob
+          # rather than `tests/`: newer Node reads a bare directory as a module
+          # path and reports zero tests.
+          node --test --test-reporter=tap tests/*.test.js | tee test.log
           # `node --test` exits 0 on a skipped run, and an empty file still
           # reports `# pass 1`, so count the cases that are meant to run.
-          expected=$(grep -c '^test(' tests/strip-tracking.test.js)
+          expected=$(cat tests/*.test.js | grep -c '^test(')
           passed=$(sed -n 's/^# pass \([0-9]*\)$/\1/p' test.log)
           skipped=$(sed -n 's/^# skipped \([0-9]*\)$/\1/p' test.log)
           echo "expected=${expected} passed=${passed:-0} skipped=${skipped:-0}"

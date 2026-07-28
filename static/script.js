@@ -71,6 +71,8 @@
 
 	const SVG_NS = 'http://www.w3.org/2000/svg';
 
+	const SCROLL_KEYS = ['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', ' ', 'Spacebar'];
+
 	let libPromise = null;
 	let overlay = null;
 	let lastFocused = null;
@@ -133,7 +135,9 @@
 				// A malformed escape means the name is not one of ours anyway.
 			}
 			if (isTracking(name)) {
-				removed.push(name);
+				if (!removed.includes(name)) {
+					removed.push(name);
+				}
 			} else {
 				kept.push(pair);
 			}
@@ -149,10 +153,18 @@
 	// escaping SimplePie applies — the scheme is not checked. A code that someone
 	// is invited to point a camera at should carry a web address and nothing
 	// else, so `javascript:`, `data:` and friends never make it into one.
-	function isWebUrl(raw, base) {
+	//
+	// The raw string is what gets encoded, so the raw string is what gets checked.
+	// Resolving it against the page first would accept `https:evil.example/x` and
+	// `//evil.example/x`, which a phone parsing the code on its own reads as a
+	// different origin than the one that passed the check.
+	function isWebLink(raw) {
+		if (!/^https?:\/\//i.test(raw)) {
+			return false;
+		}
 		try {
-			const protocol = new URL(raw, base).protocol;
-			return protocol === 'http:' || protocol === 'https:';
+			const url = new URL(raw);
+			return (url.protocol === 'http:' || url.protocol === 'https:') && url.host !== '';
 		} catch (e) {
 			return false;
 		}
@@ -186,6 +198,9 @@
 			script.src = url;
 			script.onload = function () {
 				if (window.qrcode) {
+					// Once, rather than on every render: this is a shared global.
+					window.qrcode.stringToBytes =
+						window.qrcode.stringToBytesFuncs['UTF-8'] || window.qrcode.stringToBytes;
 					resolve(window.qrcode);
 				} else {
 					reject(new Error('share_via_qr_code: library loaded but exposes no global'));
@@ -203,7 +218,6 @@
 	}
 
 	function buildQrSvg(qrcode, text) {
-		qrcode.stringToBytes = qrcode.stringToBytesFuncs['UTF-8'] || qrcode.stringToBytes;
 		const qr = qrcode(0, 'M');	// Type 0 picks the smallest version that fits.
 		qr.addData(text);
 		qr.make();
@@ -269,7 +283,7 @@
 		const cleaned = stripTracking(raw);
 		const targets = [];
 
-		if (raw !== '' && isWebUrl(raw, window.location.href)) {
+		if (isWebLink(raw)) {
 			targets.push({
 				key: 'cleaned',
 				label: cleaned.removed.length > 0 ? t('target_cleaned') : t('target_article'),
@@ -335,18 +349,24 @@
 			button.setAttribute('aria-pressed', isFavourite ? 'true' : 'false');
 		}
 
+		// Adding one is the end of the errand, so it closes; removing one is a
+		// correction, and staying open is what makes the result visible. The close
+		// waits for the core to confirm: mark_favorite() does nothing at all while
+		// an earlier request for the same article is still in flight, and a failed
+		// request would otherwise close the overlay over an unchanged article.
+		let closeWhenMarked = false;
 		button.addEventListener('click', function () {
-			// Adding one is the end of the errand, so it closes; removing one is a
-			// correction, and staying open is what makes the result visible.
-			const wasFavourite = flux.classList.contains('favorite');
+			closeWhenMarked = !flux.classList.contains('favorite');
 			window.mark_favorite(flux);
-			if (!wasFavourite) {
-				closeOverlay();
-			}
 		});
 
 		// The core toggles the class only once its request comes back.
-		favouriteObserver = new MutationObserver(render);
+		favouriteObserver = new MutationObserver(function () {
+			render();
+			if (closeWhenMarked && flux.classList.contains('favorite')) {
+				closeOverlay();
+			}
+		});
 		favouriteObserver.observe(flux, { attributes: true, attributeFilter: ['class'] });
 
 		render();
@@ -416,6 +436,7 @@
 
 		const urlText = document.createElement('p');
 		urlText.className = 'qr-url';
+		urlText.setAttribute('dir', 'ltr');
 		body.appendChild(urlText);
 
 		let note = null;
@@ -436,7 +457,7 @@
 				code.textContent = name;
 				note.appendChild(code);
 			});
-			note.appendChild(document.createTextNode(format(parts[1] || '', values)));
+			note.appendChild(document.createTextNode(format(parts.slice(1).join(''), values)));
 			body.appendChild(note);
 		}
 
@@ -460,10 +481,11 @@
 				try {
 					svg = buildQrSvg(qrcode, target.url);
 				} catch (error) {
-					// A QR code holds ~3 kB at most, and a feed decides how long
-					// its links are. Saying so beats the generic load error.
+					// A QR code holds ~2.3 kB at most and a feed decides how long
+					// its links are, so that case gets its own message. Anything
+					// else is a genuine failure and must not be blamed on length.
 					console.error(error);
-					canvas.textContent = t('too_long');
+					canvas.textContent = String(error).indexOf('overflow') >= 0 ? t('too_long') : t('error');
 					return;
 				}
 				canvas.appendChild(svg);
@@ -497,15 +519,13 @@
 			return;
 		}
 
-		const label = t('open') + ' (' + SHORTCUT + ')';
 		const button = document.createElement('button');
 		button.type = 'button';
 		// Deliberately not `item-element`: that class carries a vertical padding
 		// which the reading view's own footer links do not have, so the button
 		// would stretch the line it joins.
 		button.className = 'qr-share-button';
-		button.title = label;
-		button.setAttribute('aria-label', label);
+		applyOpenLabel(button);
 		button.appendChild(buildIcon(ICON_PATH, 16));
 		button.addEventListener('click', function (ev) {
 			ev.preventDefault();
@@ -530,12 +550,17 @@
 		}
 	}
 
+	// The hint is only promised when the key is actually ours: a user who has
+	// reassigned it to a core action gets the button without a shortcut that
+	// would do nothing.
+	function applyOpenLabel(button) {
+		const label = shortcutIsTaken() ? t('open') : t('open') + ' (' + SHORTCUT.toLowerCase() + ')';
+		button.title = label;
+		button.setAttribute('aria-label', label);
+	}
+
 	function refreshLabels() {
-		document.querySelectorAll('.qr-share-button').forEach(function (button) {
-			const label = t('open') + ' (' + SHORTCUT + ')';
-			button.title = label;
-			button.setAttribute('aria-label', label);
-		});
+		document.querySelectorAll('.qr-share-button').forEach(applyOpenLabel);
 	}
 
 	function shortcutIsTaken() {
@@ -548,10 +573,37 @@
 		});
 	}
 
+	// `aria-modal` is a promise that focus stays inside, and nothing else on the
+	// page enforces it: the backdrop only hides the rest visually, so a stray Tab
+	// would put the caret in a control nobody can see.
+	function trapFocus(ev) {
+		const focusable = overlay.querySelectorAll('button, [href], input, select, textarea, [tabindex]');
+		if (focusable.length === 0) {
+			return;
+		}
+		const first = focusable[0];
+		const last = focusable[focusable.length - 1];
+		if (ev.shiftKey && document.activeElement === first) {
+			last.focus();
+			ev.preventDefault();
+		} else if (!ev.shiftKey && document.activeElement === last) {
+			first.focus();
+			ev.preventDefault();
+		} else if (!overlay.contains(document.activeElement)) {
+			first.focus();
+			ev.preventDefault();
+		}
+	}
+
 	function onKeydown(ev) {
 		if (overlay !== null) {
 			if (ev.key === 'Escape') {
 				closeOverlay();
+				ev.preventDefault();
+			} else if (ev.key === 'Tab') {
+				trapFocus(ev);
+			} else if (SCROLL_KEYS.indexOf(ev.key) >= 0) {
+				// Otherwise the page behind the overlay scrolls away under it.
 				ev.preventDefault();
 			}
 			// Swallow everything else so the shortcuts of the stream behind the
@@ -579,13 +631,14 @@
 	}
 
 	function init() {
-		const stream = document.getElementById('stream');
-		if (stream === null) {
-			return;
+		if (document.getElementById('stream') === null) {
+			return;	// Not a page that lists articles.
 		}
-		addButtons(stream);
+		addButtons(document.body);
 
-		// Articles arrive later through "load more" and through auto-loading.
+		// Watches the whole body rather than #stream: articles arrive later through
+		// "load more" and auto-loading, and the global view loads them into #panel,
+		// which sits outside #stream entirely.
 		new MutationObserver(function (mutations) {
 			mutations.forEach(function (mutation) {
 				mutation.addedNodes.forEach(function (node) {
@@ -594,14 +647,14 @@
 					}
 				});
 			});
-		}).observe(stream, { childList: true, subtree: true });
+		}).observe(document.body, { childList: true, subtree: true });
 	}
 
 	// Stripping tracking parameters is the one part that can quietly break a
 	// link, so it is covered by tests/strip-tracking.test.js. Under the test
 	// runner there is no document and only the pure helpers are exported.
 	if (typeof document === 'undefined') {
-		module.exports = { stripTracking: stripTracking, isTracking: isTracking, isWebUrl: isWebUrl };
+		module.exports = { stripTracking: stripTracking, isTracking: isTracking, isWebLink: isWebLink };
 		return;
 	}
 

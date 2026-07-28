@@ -13,7 +13,7 @@ needs no additional service, no account and no app on the desktop.
 ## What it does
 
 * Adds a small QR button to the bottom line of every article, and the
-  shortcut <kbd>G</kbd>.
+  shortcut <kbd>g</kbd>.
 * Shows the code full size in an overlay — size is what decides whether a
   camera locks on from arm's length.
 * Points at the **external article link** by default, with known tracking
@@ -51,10 +51,13 @@ on it and never will be.
 `tests/strip-tracking.test.js` pins this behaviour. Run it with:
 
 ```sh
-node --test tests/strip-tracking.test.js
+node --test tests/*.test.js
 ```
 
 ## Installation
+
+Requires **FreshRSS 1.26.0 or newer** (`Minz_Request::paramIntNull`). Developed
+and tested against 1.29.x.
 
 1. Download this repository and place the `xExtension-ShareViaQRCode` directory
    into the `extensions/` directory of your FreshRSS installation.
@@ -82,10 +85,14 @@ it remains a switch in the overlay; the setting only picks which one is on top.
 
 ## Shortcut
 
-<kbd>G</kbd> opens the overlay for the current article — the one selected with
-<kbd>J</kbd>/<kbd>K</kbd>, or the first one on the page if none is selected.
-The key is free in FreshRSS' default set; if you have reassigned it to a core
-action, that action wins and the extension stays out of the way.
+<kbd>g</kbd> opens the overlay for the current article — the one selected with
+<kbd>j</kbd>/<kbd>k</kbd>, or the first one on the page if none is selected.
+Plain <kbd>g</kbd> only; like the core's own single-letter shortcuts it ignores
+modifiers.
+
+The key is free in FreshRSS' default set. If you have reassigned it to a core
+action, that action wins, the extension stays out of the way, and the button
+stops advertising a shortcut it no longer has.
 
 ## Security
 
@@ -96,11 +103,16 @@ decoded value back to JavaScript. The extension therefore:
 
 * **Never builds HTML from feed data.** Everything goes through `textContent`
   and `createElement`; there is no `innerHTML` anywhere in the extension.
-* **Only puts `http:` and `https:` into a code.** A `javascript:` or `data:`
-  link gets no external target at all — only the FreshRSS permalink remains.
-  Pointing a camera at a code should never be a way to run something. Leading
-  or embedded whitespace and control characters do not smuggle a scheme past
-  the check; `tests/strip-tracking.test.js` covers those cases.
+* **Only puts absolute `http:` and `https:` links into a code.** A
+  `javascript:` or `data:` link gets no external target at all — only the
+  FreshRSS permalink remains. Pointing a camera at a code should never be a way
+  to run something. The check reads the same raw string that gets encoded, not
+  a version of it resolved against the current page: `https:evil.example/x` and
+  `//evil.example/x` look local next to the reader's URL but mean something
+  else to a phone reading the code on its own, so both are rejected.
+* **Prints the URL with the bidi algorithm overridden.** A link containing
+  U+202E would otherwise display a different host than the code carries, which
+  would defeat the point of printing it.
 * **Validates its settings on the way in and on the way out**, so a value edited
   into `config.php` by hand cannot reach the page either.
 

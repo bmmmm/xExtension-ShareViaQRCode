@@ -154,9 +154,14 @@
 	height: auto;
 }
 
+/* The printed URL is the whole point of showing it: a link carrying U+202E
+   survives every layer above and would render as a different host than the one
+   in the code. Overriding the bidi algorithm keeps the text in the order the
+   bytes are in. */
 #share-via-qr-code .qr-url {
 	width: 100%;
 	margin: 0;
+	unicode-bidi: bidi-override;
 	font-family: monospace;
 	font-size: 0.85rem;
 	overflow-wrap: anywhere;

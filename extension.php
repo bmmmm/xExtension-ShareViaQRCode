@@ -27,7 +27,10 @@ final class ShareViaQRCodeExtension extends Minz_Extension {
 		parent::init();
 
 		$this->registerTranslates();
-		$this->registerHook(Minz_HookType::JsVars, [$this, 'jsVars']);
+		// The hook name as a string rather than Minz_HookType::JsVars: the enum
+		// only exists from FreshRSS 1.28, registerHook() has always accepted the
+		// name, and nothing else here needs anything newer than 1.26.
+		$this->registerHook('js_vars', [$this, 'jsVars']);
 
 		Minz_View::appendStyle($this->getFileUrl('style.css'));
 		Minz_View::appendScript($this->getFileUrl('script.js'));
@@ -35,60 +38,73 @@ final class ShareViaQRCodeExtension extends Minz_Extension {
 
 	#[\Override]
 	public function handleConfigureAction(): void {
-		parent::init();
+		parent::handleConfigureAction();
 
+		// Extensions are only init()ed once they are enabled, while this action is
+		// reached for any listed one, so the translations are registered here too.
 		$this->registerTranslates();
 
 		if (!Minz_Request::isPost()) {
 			return;
 		}
 
+		// Every value falls back to what is already stored rather than to the
+		// default, so a request carrying only some of the fields cannot silently
+		// reset the rest.
+		$current = $this->settings();
+
 		$target = Minz_Request::paramString('default_target');
 		$this->setUserConfigurationValue(
 			'default_target',
-			in_array($target, self::TARGETS, true) ? $target : self::DEFAULTS['default_target'],
+			in_array($target, self::TARGETS, true) ? $target : $current['default_target'],
 		);
 		$this->setUserConfigurationValue('qr_size', self::clampInt(
-			Minz_Request::paramIntNull('qr_size'), self::SIZE_MIN, self::SIZE_MAX, self::DEFAULTS['qr_size'],
+			Minz_Request::paramIntNull('qr_size'), self::SIZE_MIN, self::SIZE_MAX, $current['qr_size'],
 		));
 		$this->setUserConfigurationValue('qr_background', self::sanitiseColour(
-			Minz_Request::paramString('qr_background'),
+			Minz_Request::paramString('qr_background'), $current['qr_background'],
 		));
 		$this->setUserConfigurationValue('qr_background_alpha', self::clampInt(
-			Minz_Request::paramIntNull('qr_background_alpha'), 0, 100, self::DEFAULTS['qr_background_alpha'],
+			Minz_Request::paramIntNull('qr_background_alpha'), 0, 100, $current['qr_background_alpha'],
 		));
 		$this->setUserConfigurationValue('backdrop_alpha', self::clampInt(
-			Minz_Request::paramIntNull('backdrop_alpha'), 0, 100, self::DEFAULTS['backdrop_alpha'],
+			Minz_Request::paramIntNull('backdrop_alpha'), 0, 100, $current['backdrop_alpha'],
 		));
 
 		Minz_Request::good(_t('feedback.conf.updated'), [
-			'c' => 'extension', 'a' => 'configure', 'params' => ['e' => $this->getName()],
+			'c' => 'extension', 'a' => 'configure', 'params' => ['e' => urlencode($this->getName())],
 		]);
 	}
 
 	/**
 	 * The stored settings, validated. Values written by an earlier version or by
-	 * hand are clamped here as well, so the view and the JS context can trust them.
+	 * hand are corrected here too, so the view and the JS context can trust them.
+	 * Reads through getUserConfigurationValue() rather than the typed getters,
+	 * which only exist from FreshRSS 1.29.
 	 *
 	 * @return array{default_target:string, qr_size:int, qr_background:string,
 	 *     qr_background_alpha:int, backdrop_alpha:int}
 	 */
 	public function settings(): array {
-		$target = $this->getUserConfigurationString('default_target') ?? '';
+		$asInt = static fn(mixed $value): ?int => is_numeric($value) ? (int) $value : null;
+		$target = $this->getUserConfigurationValue('default_target');
 
 		return [
-			'default_target' => in_array($target, self::TARGETS, true) ? $target : self::DEFAULTS['default_target'],
+			'default_target' => is_string($target) && in_array($target, self::TARGETS, true)
+				? $target : self::DEFAULTS['default_target'],
 			'qr_size' => self::clampInt(
-				$this->getUserConfigurationInt('qr_size'),
+				$asInt($this->getUserConfigurationValue('qr_size')),
 				self::SIZE_MIN, self::SIZE_MAX, self::DEFAULTS['qr_size'],
 			),
-			'qr_background' => self::sanitiseColour($this->getUserConfigurationString('qr_background') ?? ''),
+			'qr_background' => self::sanitiseColour(
+				$this->getUserConfigurationValue('qr_background'), self::DEFAULTS['qr_background'],
+			),
 			'qr_background_alpha' => self::clampInt(
-				$this->getUserConfigurationInt('qr_background_alpha'),
+				$asInt($this->getUserConfigurationValue('qr_background_alpha')),
 				0, 100, self::DEFAULTS['qr_background_alpha'],
 			),
 			'backdrop_alpha' => self::clampInt(
-				$this->getUserConfigurationInt('backdrop_alpha'),
+				$asInt($this->getUserConfigurationValue('backdrop_alpha')),
 				0, 100, self::DEFAULTS['backdrop_alpha'],
 			),
 		];
@@ -151,18 +167,18 @@ final class ShareViaQRCodeExtension extends Minz_Extension {
 		return $vars;
 	}
 
-	/** A missing value falls back to the default; a value out of range is pulled to the nearest bound. */
-	private static function clampInt(?int $value, int $min, int $max, int $default): int {
+	/** A missing value falls back to $fallback; one out of range is pulled to the nearest bound. */
+	private static function clampInt(?int $value, int $min, int $max, int $fallback): int {
 		if ($value === null) {
-			return $default;
+			return $fallback;
 		}
 		return max($min, min($max, $value));
 	}
 
-	private static function sanitiseColour(string $value): string {
-		return preg_match('/^#[0-9a-f]{6}$/i', $value) === 1
+	private static function sanitiseColour(mixed $value, string $fallback): string {
+		return is_string($value) && preg_match('/^#[0-9a-f]{6}$/i', $value) === 1
 			? strtolower($value)
-			: self::DEFAULTS['qr_background'];
+			: $fallback;
 	}
 
 	/** WCAG contrast ratio of an opaque colour against the black QR modules. */

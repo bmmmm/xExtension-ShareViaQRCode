@@ -1,6 +1,6 @@
 'use strict';
 
-// Run with `node --test tests/`. No dependencies, no test framework.
+// Run with `node --test tests/*.test.js`. No dependencies, no framework.
 const test = require('node:test');
 const assert = require('node:assert/strict');
 
@@ -98,13 +98,12 @@ test('prefix families cover names that did not exist yet', () => {
 // checked, so the extension has to do it before putting anything into a code a
 // person is asked to point a camera at.
 
-const { isWebUrl } = require('../static/script.js');
-const BASE = 'https://reader.example/i/';
+const { isWebLink } = require('../static/script.js');
 
 test('http and https are the only schemes that reach a code', () => {
-	assert.equal(isWebUrl('https://e.example/a', BASE), true);
-	assert.equal(isWebUrl('http://e.example/a', BASE), true);
-	assert.equal(isWebUrl('HTTPS://e.example/a', BASE), true);
+	assert.equal(isWebLink('https://e.example/a'), true);
+	assert.equal(isWebLink('http://e.example/a'), true);
+	assert.equal(isWebLink('HTTPS://e.example/a'), true);
 });
 
 test('script-bearing and local schemes are rejected', () => {
@@ -116,12 +115,8 @@ test('script-bearing and local schemes are rejected', () => {
 		'file:///etc/passwd',
 		'blob:https://e.example/1234',
 	]) {
-		assert.equal(isWebUrl(hostile, BASE), false, hostile);
+		assert.equal(isWebLink(hostile), false, hostile);
 	}
-});
-
-test('a relative link resolves against the page and stays allowed', () => {
-	assert.equal(isWebUrl('/article/1', BASE), true);
 });
 
 // Leading and embedded whitespace or control characters are the classic way to
@@ -140,15 +135,40 @@ test('whitespace and control characters do not smuggle a scheme through', () => 
 		'java' + TAB + 'script:alert(1)',
 		' JaVaScRiPt:alert(1)',
 	]) {
-		assert.equal(isWebUrl(hostile, BASE), false, JSON.stringify(hostile));
+		assert.equal(isWebLink(hostile), false, JSON.stringify(hostile));
 	}
 });
 
-// Anything without a scheme is a relative link and resolves under the page, so
-// it stays http(s) by construction. Junk stays junk in the code, which is what
-// the feed asked for, but it can never be a different scheme.
-test('a string without a scheme cannot become a foreign scheme', () => {
-	for (const junk of ['not a url', '://', '%6aavascript:alert(1)']) {
-		assert.equal(isWebUrl(junk, BASE), true, JSON.stringify(junk));
+// The raw string is what ends up in the code, so the raw string is what is
+// checked. Resolving against the page first would approve these: a phone
+// parsing the code on its own reads a different origin than the check saw.
+test('a link that only looks absolute next to the page is rejected', () => {
+	for (const relative of [
+		'https:evil.example/x',      // same special scheme as the page: parsed as relative
+		'//evil.example/x',          // scheme-relative
+		'evil.example/x',            // bare host, which scanners prepend http:// to
+		'/article/1',                // path-relative
+		'not a url',
+		'://',
+		'%6aavascript:alert(1)',
+		'',
+		'?utm_source=1',             // query-only: used to yield an empty code
+	]) {
+		assert.equal(isWebLink(relative), false, JSON.stringify(relative));
 	}
+});
+
+test('an http(s) URL without a host is rejected', () => {
+	assert.equal(isWebLink('https://'), false);
+	// Not a typo: the parser reads the first path segment as the host, so this is
+	// an absolute URL to the single-label host `path` and is allowed through.
+	assert.equal(isWebLink('http:///path'), true);
+});
+
+// The same tracker twice must not be named twice in the overlay.
+test('repeated tracker names are reported once', () => {
+	assert.deepEqual(
+		stripTracking('https://e.example/a?utm_source=x&utm_source=y&id=1'),
+		{ url: 'https://e.example/a?id=1', removed: ['utm_source'] },
+	);
 });
