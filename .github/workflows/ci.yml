@@ -73,6 +73,29 @@ jobs:
             || { echo "expected ${expected} passing tests, got ${passed:-0}"; exit 1; }
           test "${skipped:-0}" -eq 0 || { echo 'a test was skipped'; exit 1; }
 
+      # The JS fallback strings are what a user sees in the window before the
+      # global context arrives. Add a key to jsVars and forget this map, and that
+      # window shows "undefined".
+      - name: Check the JS fallback strings cover every key sent to the browser
+        run: |
+          php -r '
+            preg_match("/\x27i18n\x27 => \[(.*?)\n\t\t\t\]/s", file_get_contents("extension.php"), $m);
+            preg_match_all("/\x27([a-z_]+)\x27 =>/", $m[1] ?? "", $php);
+            preg_match("/FALLBACK_I18N = \{(.*?)\n\t\};/s", file_get_contents("static/script.js"), $j);
+            preg_match_all("/^\t\t([a-z_]+):/m", $j[1] ?? "", $js);
+            $sent = $php[1]; $fallback = $js[1];
+            if (count($sent) < 5 || count($fallback) < 5) {
+              fwrite(STDERR, "pattern matched too little: " . count($sent) . " sent, " . count($fallback) . " fallback\n");
+              exit(1);
+            }
+            $missing = array_diff($sent, $fallback);
+            if ($missing !== []) {
+              fwrite(STDERR, "FALLBACK_I18N is missing: " . implode(", ", $missing) . "\n");
+              exit(1);
+            }
+            echo count($sent), " keys sent to the browser, all present in FALLBACK_I18N\n";
+          '
+
       - name: Check every translation key used by the extension exists
         run: |
           php -r '
