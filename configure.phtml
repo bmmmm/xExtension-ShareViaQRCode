@@ -1,0 +1,63 @@
+<?php
+	declare(strict_types=1);
+	/** @var ShareViaQRCodeExtension $this */
+	$settings = $this->settings();
+	$warnings = $this->scanWarnings();
+	[$sizeMin, $sizeMax] = $this->sizeRange();
+?>
+<?php foreach ($warnings as $warning) { ?>
+	<p class="alert alert-warn"><?= $warning ?></p>
+<?php } ?>
+
+<form action="<?= _url('extension', 'configure', 'e', urlencode($this->getName())) ?>" method="post">
+	<input type="hidden" name="_csrf" value="<?= FreshRSS_Auth::csrfToken() ?>" />
+
+	<div class="form-group">
+		<label class="group-name" for="default_target"><?= _t('ext.share_via_qr_code.conf.default_target') ?></label>
+		<div class="group-controls">
+			<select name="default_target" id="default_target">
+				<?php foreach ($this->targets() as $target) { ?>
+					<option value="<?= $target ?>"<?= $settings['default_target'] === $target ? ' selected="selected"' : '' ?>>
+						<?= _t('ext.share_via_qr_code.target.' . $target) ?>
+					</option>
+				<?php } ?>
+			</select>
+			<p class="help"><?= _t('ext.share_via_qr_code.conf.default_target_help') ?></p>
+		</div>
+	</div>
+
+	<div class="form-group">
+		<label class="group-name" for="qr_size"><?= _t('ext.share_via_qr_code.conf.qr_size') ?></label>
+		<div class="group-controls">
+			<input type="number" name="qr_size" id="qr_size" min="<?= $sizeMin ?>" max="<?= $sizeMax ?>" step="10"
+				value="<?= $settings['qr_size'] ?>" /> px
+			<p class="help"><?= _t('ext.share_via_qr_code.conf.qr_size_help', $sizeMin, $sizeMax) ?></p>
+		</div>
+	</div>
+
+	<div class="form-group">
+		<label class="group-name" for="qr_background"><?= _t('ext.share_via_qr_code.conf.qr_background') ?></label>
+		<div class="group-controls">
+			<input type="color" name="qr_background" id="qr_background" value="<?= $settings['qr_background'] ?>" />
+			<input type="number" name="qr_background_alpha" id="qr_background_alpha" min="0" max="100" step="5"
+				value="<?= $settings['qr_background_alpha'] ?>" /> %
+			<p class="help"><?= _t('ext.share_via_qr_code.conf.qr_background_help') ?></p>
+		</div>
+	</div>
+
+	<div class="form-group">
+		<label class="group-name" for="backdrop_alpha"><?= _t('ext.share_via_qr_code.conf.backdrop_alpha') ?></label>
+		<div class="group-controls">
+			<input type="number" name="backdrop_alpha" id="backdrop_alpha" min="0" max="100" step="5"
+				value="<?= $settings['backdrop_alpha'] ?>" /> %
+			<p class="help"><?= _t('ext.share_via_qr_code.conf.backdrop_alpha_help') ?></p>
+		</div>
+	</div>
+
+	<div class="form-group form-actions">
+		<div class="group-controls">
+			<button type="submit" class="btn btn-important"><?= _t('gen.action.submit') ?></button>
+			<button type="reset" class="btn"><?= _t('gen.action.cancel') ?></button>
+		</div>
+	</div>
+</form>

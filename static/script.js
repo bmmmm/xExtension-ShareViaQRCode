@@ -38,6 +38,8 @@
 	const FALLBACK_I18N = {
 		open: 'Show QR code',
 		close: 'Close',
+		favourite: 'Mark as favourite and close',
+		unfavourite: 'Remove from favourites',
 		title: 'Share via QR code',
 		error: 'The QR code library could not be loaded. Reload the page and try again.',
 		removed_one: '1 tracking parameter removed: {params}',
@@ -48,25 +50,42 @@
 		target_internal: 'FreshRSS view',
 	};
 
+	// Mirrors the defaults in extension.php; used when the script runs before the
+	// global context has arrived, or on an installation that never saved settings.
+	const FALLBACK_SETTINGS = {
+		default_target: 'cleaned',
+		qr_size: 400,
+		qr_background: '#ffffff',
+		qr_background_alpha: 100,
+		backdrop_alpha: 65,
+	};
+
 	const ICON_PATH =
 		'M2,2h8v8H2z M4,4v4h4V4z M5,5h2v2H5z ' +
 		'M14,2h8v8h-8z M16,4v4h4V4z M17,5h2v2h-2z ' +
 		'M2,14h8v8H2z M4,16v4h4v-4z M5,17h2v2H5z ' +
 		'M13,13h3v3h-3z M18,13h3v3h-3z M13,18h3v3h-3z M18,18h3v3h-3z';
 
+	const STAR_PATH = 'M12,2.6l2.9,5.9 6.5,0.95 -4.7,4.6 1.1,6.5 -5.8,-3.05 -5.8,3.05 1.1,-6.5 -4.7,-4.6 6.5,-0.95z';
+
 	const SVG_NS = 'http://www.w3.org/2000/svg';
 
 	let libPromise = null;
 	let overlay = null;
 	let lastFocused = null;
+	let favouriteObserver = null;
 
-	function settings() {
+	function extensionVars() {
 		const vars = window.context && window.context.extensions;
 		return (vars && vars.share_via_qr_code) || {};
 	}
 
+	function config() {
+		return Object.assign({}, FALLBACK_SETTINGS, extensionVars().settings || {});
+	}
+
 	function t(key) {
-		const i18n = settings().i18n;
+		const i18n = extensionVars().i18n;
 		return (i18n && i18n[key]) || FALLBACK_I18N[key];
 	}
 
@@ -144,7 +163,7 @@
 			return libPromise;
 		}
 		libPromise = new Promise(function (resolve, reject) {
-			const url = settings().lib_url;
+			const url = extensionVars().lib_url;
 			if (!url) {
 				reject(new Error('share_via_qr_code: no library URL in the JS context'));
 				return;
@@ -194,10 +213,15 @@
 		svg.setAttribute('role', 'img');
 		svg.setAttribute('aria-label', t('title'));
 
+		// The modules stay black whatever the background is set to. Inverted codes
+		// are read unreliably, so the configuration page warns about a dark or
+		// see-through background rather than flipping the modules.
+		const settings = config();
 		const background = document.createElementNS(SVG_NS, 'rect');
 		background.setAttribute('width', String(size));
 		background.setAttribute('height', String(size));
-		background.setAttribute('fill', '#fff');
+		background.setAttribute('fill', settings.qr_background);
+		background.setAttribute('fill-opacity', String(settings.qr_background_alpha / 100));
 		svg.appendChild(background);
 
 		const modules = document.createElementNS(SVG_NS, 'path');
@@ -208,16 +232,16 @@
 		return svg;
 	}
 
-	function buildIcon() {
+	function buildIcon(d, size) {
 		const svg = document.createElementNS(SVG_NS, 'svg');
 		svg.setAttribute('viewBox', '0 0 24 24');
-		svg.setAttribute('width', '16');
-		svg.setAttribute('height', '16');
+		svg.setAttribute('width', String(size));
+		svg.setAttribute('height', String(size));
 		svg.setAttribute('aria-hidden', 'true');
 		svg.setAttribute('focusable', 'false');
 
 		const path = document.createElementNS(SVG_NS, 'path');
-		path.setAttribute('d', ICON_PATH);
+		path.setAttribute('d', d);
 		path.setAttribute('fill', 'currentColor');
 		path.setAttribute('fill-rule', 'evenodd');
 		svg.appendChild(path);
@@ -233,6 +257,7 @@
 
 		if (raw !== '') {
 			targets.push({
+				key: 'cleaned',
 				label: cleaned.removed.length > 0 ? t('target_cleaned') : t('target_article'),
 				url: cleaned.url,
 				// The note describes this target only: next to the original it
@@ -240,19 +265,30 @@
 				note: cleaned.removed.length > 0,
 			});
 			if (cleaned.removed.length > 0) {
-				targets.push({ label: t('target_original'), url: raw, note: false });
+				targets.push({ key: 'original', label: t('target_original'), url: raw, note: false });
 			}
 		}
 		if (entryId !== '') {
-			targets.push({ label: t('target_internal'), url: internalUrl(entryId), note: false });
+			targets.push({ key: 'internal', label: t('target_internal'), url: internalUrl(entryId), note: false });
 		}
 
 		return { targets: targets, removed: cleaned.removed };
 	}
 
+	// The preselected target is a preference, not a guarantee: `original` does not
+	// exist when nothing was stripped, and `internal` needs an entry id.
+	function preselected(targets) {
+		const wanted = config().default_target;
+		return targets.find(target => target.key === wanted) || targets[0];
+	}
+
 	function closeOverlay() {
 		if (overlay === null) {
 			return;
+		}
+		if (favouriteObserver !== null) {
+			favouriteObserver.disconnect();
+			favouriteObserver = null;
 		}
 		overlay.remove();
 		overlay = null;
@@ -260,6 +296,47 @@
 			lastFocused.focus();
 		}
 		lastFocused = null;
+	}
+
+	// Reuses the core's own toggle so the star in the article row, the sidebar
+	// counter and the extension all stay in sync. It needs the article's bookmark
+	// link, which the user can switch off in the article display settings.
+	function canFavourite(flux) {
+		return typeof window.mark_favorite === 'function' && flux.querySelector('a.bookmark') !== null;
+	}
+
+	function buildFavouriteButton(flux) {
+		const button = document.createElement('button');
+		button.type = 'button';
+		button.className = 'qr-favourite';
+
+		function render() {
+			const isFavourite = flux.classList.contains('favorite');
+			const label = isFavourite ? t('unfavourite') : t('favourite');
+			button.textContent = '';
+			button.appendChild(buildIcon(STAR_PATH, 20));
+			button.classList.toggle('active', isFavourite);
+			button.title = label;
+			button.setAttribute('aria-label', label);
+			button.setAttribute('aria-pressed', isFavourite ? 'true' : 'false');
+		}
+
+		button.addEventListener('click', function () {
+			// Adding one is the end of the errand, so it closes; removing one is a
+			// correction, and staying open is what makes the result visible.
+			const wasFavourite = flux.classList.contains('favorite');
+			window.mark_favorite(flux);
+			if (!wasFavourite) {
+				closeOverlay();
+			}
+		});
+
+		// The core toggles the class only once its request comes back.
+		favouriteObserver = new MutationObserver(render);
+		favouriteObserver.observe(flux, { attributes: true, attributeFilter: ['class'] });
+
+		render();
+		return button;
 	}
 
 	function openOverlay(flux) {
@@ -270,9 +347,11 @@
 
 		closeOverlay();
 		lastFocused = document.activeElement;
+		const settings = config();
 
 		overlay = document.createElement('div');
 		overlay.id = 'share-via-qr-code';
+		overlay.style.backgroundColor = 'rgba(0, 0, 0, ' + settings.backdrop_alpha / 100 + ')';
 		overlay.addEventListener('click', function (ev) {
 			if (ev.target === overlay) {
 				closeOverlay();
@@ -286,6 +365,14 @@
 		dialog.setAttribute('aria-label', t('title'));
 		overlay.appendChild(dialog);
 
+		const actions = document.createElement('div');
+		actions.className = 'qr-actions';
+		dialog.appendChild(actions);
+
+		if (canFavourite(flux)) {
+			actions.appendChild(buildFavouriteButton(flux));
+		}
+
 		const close = document.createElement('button');
 		close.type = 'button';
 		close.className = 'qr-close';
@@ -293,7 +380,7 @@
 		close.title = t('close');
 		close.setAttribute('aria-label', t('close'));
 		close.addEventListener('click', closeOverlay);
-		dialog.appendChild(close);
+		actions.appendChild(close);
 
 		const switcher = document.createElement('div');
 		switcher.className = 'qr-targets';
@@ -302,6 +389,9 @@
 
 		const canvas = document.createElement('div');
 		canvas.className = 'qr-canvas';
+		// A hard width, but the stylesheet still caps it at the viewport so a
+		// generous setting cannot push the dialog off a narrow screen.
+		canvas.style.width = settings.qr_size + 'px';
 		dialog.appendChild(canvas);
 
 		const urlText = document.createElement('p');
@@ -367,7 +457,7 @@
 		});
 
 		document.body.appendChild(overlay);
-		show(model.targets[0]);
+		show(preselected(model.targets));
 		close.focus();
 	}
 
@@ -386,7 +476,7 @@
 		button.className = 'qr-share-button';
 		button.title = label;
 		button.setAttribute('aria-label', label);
-		button.appendChild(buildIcon());
+		button.appendChild(buildIcon(ICON_PATH, 16));
 		button.addEventListener('click', function (ev) {
 			ev.preventDefault();
 			ev.stopPropagation();

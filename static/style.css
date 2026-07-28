@@ -19,7 +19,24 @@
 	opacity: 1;
 }
 
-/* Above every z-index the base theme and the bundled themes use (max 9999). */
+/* Configuration page: the themes stretch every input to the form width, which
+   turns the colour swatch into an unrecognisable bar. */
+#qr_background {
+	width: 4rem;
+	min-width: 4rem;
+	padding: 0.125rem;
+}
+
+#qr_size,
+#qr_background_alpha,
+#backdrop_alpha {
+	width: 6rem;
+	min-width: 6rem;
+}
+
+/* Above every z-index the base theme and the bundled themes use (max 9999).
+   The backdrop colour is set inline from the user's setting; this is only the
+   fallback for the moment before the script runs. */
 #share-via-qr-code {
 	display: flex;
 	align-items: center;
@@ -36,23 +53,38 @@
 	flex-direction: column;
 	align-items: center;
 	gap: 0.75rem;
-	position: relative;
+	/* Without this the padding is added on top of max-height and a large code
+	   pushes the bottom of the dialog past the edge of the screen. */
+	box-sizing: border-box;
 	max-width: 100%;
 	max-height: 100%;
 	overflow: auto;
-	padding: 1.5rem;
+	padding: 1rem 1.5rem 1.5rem;
 	border-radius: 0.5rem;
 	background-color: var(--frss-background-color, #fff);
 	box-shadow: 0 0.5rem 1.5rem var(--frss-box-shadow-color-transparent, #0003);
 	text-align: center;
 }
 
-#share-via-qr-code .qr-close {
-	position: absolute;
-	top: 0.25rem;
-	right: 0.5rem;
-	padding: 0.25rem 0.5rem;
+/* Its own row rather than an absolutely positioned corner: nothing can then
+   end up underneath the buttons, whatever the code size is set to. */
+#share-via-qr-code .qr-actions {
+	display: flex;
+	align-items: center;
+	justify-content: flex-end;
+	gap: 0.25rem;
+	width: 100%;
+}
+
+#share-via-qr-code .qr-actions button {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 2rem;
+	height: 2rem;
+	padding: 0;
 	border: none;
+	border-radius: 0.25rem;
 	background: none;
 	color: inherit;
 	font-size: 1.25rem;
@@ -61,8 +93,17 @@
 	opacity: 0.6;
 }
 
-#share-via-qr-code .qr-close:hover,
-#share-via-qr-code .qr-close:focus {
+#share-via-qr-code .qr-actions button:hover,
+#share-via-qr-code .qr-actions button:focus {
+	background-color: var(--frss-darken-background-hover-transparent, #6662);
+	opacity: 1;
+}
+
+/* A favourited article keeps the star lit, so the button doubles as the state.
+   The colour is the one from the core's own starred.svg — there is no variable
+   for it in the themes. */
+#share-via-qr-code .qr-favourite.active {
+	color: #f1c40f;
 	opacity: 1;
 }
 
@@ -71,7 +112,6 @@
 	flex-wrap: wrap;
 	justify-content: center;
 	gap: 0.5rem;
-	margin-right: 2rem;
 }
 
 #share-via-qr-code .qr-targets button {
@@ -89,12 +129,14 @@
 	font-weight: bold;
 }
 
-/* Size is what decides whether a phone camera locks on from arm's length. */
+/* Size is what decides whether a phone camera locks on from arm's length, so
+   the width comes from the user setting as an inline style. `max-width` still
+   wins over that, which keeps a generous setting inside a narrow window. */
 #share-via-qr-code .qr-canvas {
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	width: min(70vmin, 26rem);
+	max-width: 100%;
 	min-height: 6rem;
 }
 
@@ -104,7 +146,7 @@
 }
 
 #share-via-qr-code .qr-url {
-	max-width: min(70vmin, 26rem);
+	width: 100%;
 	margin: 0;
 	font-family: monospace;
 	font-size: 0.85rem;
@@ -114,7 +156,7 @@
 }
 
 #share-via-qr-code .qr-note {
-	max-width: min(70vmin, 26rem);
+	width: 100%;
 	margin: 0;
 	color: var(--frss-font-color-grey-dark, #666);
 	font-size: 0.85rem;
@@ -126,13 +168,6 @@
 	}
 
 	#share-via-qr-code .qr-dialog {
-		padding: 1rem;
-	}
-
-	#share-via-qr-code .qr-canvas,
-	#share-via-qr-code .qr-url,
-	#share-via-qr-code .qr-note {
-		width: min(80vmin, 22rem);
-		max-width: 100%;
+		padding: 0.5rem 1rem 1rem;
 	}
 }

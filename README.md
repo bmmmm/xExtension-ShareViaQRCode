@@ -25,6 +25,9 @@ needs no additional service, no account and no app on the desktop.
   the original for a page that needs its parameters, the FreshRSS view for a
   full-text feed you want to read yourself, the cleaned link for anything you
   send to someone else.
+* Has a star in the top right corner to keep the article. Marking one closes
+  the overlay — that is the end of the errand. Removing one leaves it open, so
+  the correction is visible.
 
 Close the overlay with <kbd>Esc</kbd>, the ✕ or a click next to it. While it is
 open, the shortcuts of the stream behind it stay inert.
@@ -57,8 +60,25 @@ node --test tests/strip-tracking.test.js
    into the `extensions/` directory of your FreshRSS installation.
 2. Enable **Share via QR Code** under *Configuration → Extensions*.
 
-There is nothing to configure. Whether a link should be internal or external is
-a per-article decision, so it is a switch in the overlay rather than a setting.
+## Settings
+
+Under *Configuration → Extensions → Share via QR Code*:
+
+| Setting | Default | Notes |
+|---|---|---|
+| Preselected link | Cleaned | Which target the overlay opens on. It is a preference, not a rule: a preselection that does not exist for an article (no tracking to strip, no entry id) falls back to the first one that does. |
+| QR code size | 400 px | 200–800. A wider setting still shrinks to fit a narrow window. |
+| QR code background | `#ffffff`, 100 % | Colour and opacity of the area behind the code. |
+| Overlay backdrop | 65 % | How far the page behind the overlay is dimmed. |
+
+The modules of the code stay black whatever the background is set to, because
+inverted codes are read unreliably. If the chosen background is too dark or too
+transparent to scan, the settings page says so instead of quietly refusing the
+value — the same reasoning as for the removed-parameters line: tell the user,
+then let them decide.
+
+Whether a link should be internal or external stays a per-article decision, so
+it remains a switch in the overlay; the setting only picks which one is on top.
 
 ## Shortcut
 

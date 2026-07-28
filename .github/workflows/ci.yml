@@ -18,7 +18,7 @@ jobs:
       - name: Check PHP syntax
         run: |
           php -v
-          find . -name '*.php' -print0 | xargs -0 -n1 php -l
+          find . \( -name '*.php' -o -name '*.phtml' \) -print0 | xargs -0 -n1 php -l
 
       - name: Check metadata.json is valid JSON
         run: |
@@ -54,8 +54,19 @@ jobs:
       - name: Check every translation key used by the extension exists
         run: |
           php -r '
-            $keys = [];
-            preg_match_all("/_t\(.ext\.share_via_qr_code\.([a-z_.]+)./", file_get_contents("extension.php"), $m);
+            $source = "";
+            foreach (["extension.php", "configure.phtml"] as $file) {
+              $source .= file_get_contents($file);
+            }
+            preg_match_all("/_t\(.ext\.share_via_qr_code\.([a-z_.]+)./", $source, $m);
+            // A capture ending in a dot comes from a key built at runtime
+            // (`.target.` . $target); the constant part alone is not a key.
+            $keys = array_values(array_filter(array_unique($m[1]), fn(string $k): bool => !str_ends_with($k, ".")));
+            if (count($keys) < 10) {
+              fwrite(STDERR, "only {$keys[0]}... " . count($keys) . " keys found - did the pattern stop matching?\n");
+              exit(1);
+            }
+            echo count($keys), " keys used\n";
             foreach (glob("i18n/*/ext.php") as $file) {
               $flat = [];
               $walk = function (array $node, string $prefix) use (&$walk, &$flat): void {
@@ -64,11 +75,12 @@ jobs:
                 }
               };
               $walk(require $file, "");
-              foreach ($m[1] as $key) {
+              foreach ($keys as $key) {
                 if (!in_array("share_via_qr_code.$key", $flat, true)) {
                   fwrite(STDERR, "$file is missing share_via_qr_code.$key\n");
                   exit(1);
                 }
               }
+              echo "$file ok\n";
             }
           '
