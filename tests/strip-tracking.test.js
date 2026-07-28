@@ -91,3 +91,64 @@ test('prefix families cover names that did not exist yet', () => {
 		{ url: 'https://e.example/a?x=3', removed: ['utm_whatever_new', 'hsa_grp'] },
 	);
 });
+
+// --- Scheme allowlist -------------------------------------------------------
+// A feed decides what the article link is, and FreshRSS only HTML-escapes it on
+// the way in (SimplePie Sanitize.php, CONSTRUCT_IRI). The scheme is never
+// checked, so the extension has to do it before putting anything into a code a
+// person is asked to point a camera at.
+
+const { isWebUrl } = require('../static/script.js');
+const BASE = 'https://reader.example/i/';
+
+test('http and https are the only schemes that reach a code', () => {
+	assert.equal(isWebUrl('https://e.example/a', BASE), true);
+	assert.equal(isWebUrl('http://e.example/a', BASE), true);
+	assert.equal(isWebUrl('HTTPS://e.example/a', BASE), true);
+});
+
+test('script-bearing and local schemes are rejected', () => {
+	for (const hostile of [
+		'javascript:alert(document.domain)',
+		'JavaScript:alert(1)',
+		'data:text/html,<script>alert(1)</script>',
+		'vbscript:msgbox(1)',
+		'file:///etc/passwd',
+		'blob:https://e.example/1234',
+	]) {
+		assert.equal(isWebUrl(hostile, BASE), false, hostile);
+	}
+});
+
+test('a relative link resolves against the page and stays allowed', () => {
+	assert.equal(isWebUrl('/article/1', BASE), true);
+});
+
+// Leading and embedded whitespace or control characters are the classic way to
+// smuggle a scheme past a naive string check. The URL parser normalises them
+// away first, so the check sees the real scheme.
+test('whitespace and control characters do not smuggle a scheme through', () => {
+	const NL = String.fromCharCode(10);
+	const TAB = String.fromCharCode(9);
+	const CR = String.fromCharCode(13);
+	for (const hostile of [
+		NL + 'javascript:alert(1)',
+		TAB + 'javascript:alert(1)',
+		CR + 'javascript:alert(1)',
+		'   javascript:alert(1)',
+		'java' + NL + 'script:alert(1)',
+		'java' + TAB + 'script:alert(1)',
+		' JaVaScRiPt:alert(1)',
+	]) {
+		assert.equal(isWebUrl(hostile, BASE), false, JSON.stringify(hostile));
+	}
+});
+
+// Anything without a scheme is a relative link and resolves under the page, so
+// it stays http(s) by construction. Junk stays junk in the code, which is what
+// the feed asked for, but it can never be a different scheme.
+test('a string without a scheme cannot become a foreign scheme', () => {
+	for (const junk of ['not a url', '://', '%6aavascript:alert(1)']) {
+		assert.equal(isWebUrl(junk, BASE), true, JSON.stringify(junk));
+	}
+});

@@ -36,6 +36,16 @@ jobs:
           node --version
           find static -name '*.js' -print0 | xargs -0 -n1 node --check
 
+      # The bundled QR library is third-party code that runs in every user's
+      # browser. Any edit to it has to show up as a checksum change in the diff.
+      - name: Check the bundled library is unmodified
+        run: |
+          cd static/vendor
+          sha256sum -c qrcode.js.sha256
+          # Guard the guard: a checksum file that lost its entry still exits 0.
+          test "$(grep -c 'qrcode\.js$' qrcode.js.sha256)" -eq 1 \
+            || { echo 'qrcode.js.sha256 does not cover qrcode.js'; exit 1; }
+
       - name: Run the tracking-parameter tests
         run: |
           # Pin the reporter: the default differs between Node versions and the

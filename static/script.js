@@ -42,6 +42,7 @@
 		unfavourite: 'Remove from favourites',
 		title: 'Share via QR code',
 		error: 'The QR code library could not be loaded. Reload the page and try again.',
+		too_long: 'This link is too long to fit into a QR code.',
 		removed_one: '1 tracking parameter removed: {params}',
 		removed_many: '{count} tracking parameters removed: {params}',
 		target_article: 'Article',
@@ -142,6 +143,19 @@
 			return { url: raw, removed: [] };
 		}
 		return { url: head + (kept.length > 0 ? '?' + kept.join('&') : '') + tail, removed: removed };
+	}
+
+	// A feed controls the article link, and FreshRSS stores it with only the HTML
+	// escaping SimplePie applies — the scheme is not checked. A code that someone
+	// is invited to point a camera at should carry a web address and nothing
+	// else, so `javascript:`, `data:` and friends never make it into one.
+	function isWebUrl(raw, base) {
+		try {
+			const protocol = new URL(raw, base).protocol;
+			return protocol === 'http:' || protocol === 'https:';
+		} catch (e) {
+			return false;
+		}
 	}
 
 	// `?state=3&search=e:<id>` is FreshRSS' internal permalink for a single
@@ -255,7 +269,7 @@
 		const cleaned = stripTracking(raw);
 		const targets = [];
 
-		if (raw !== '') {
+		if (raw !== '' && isWebUrl(raw, window.location.href)) {
 			targets.push({
 				key: 'cleaned',
 				label: cleaned.removed.length > 0 ? t('target_cleaned') : t('target_article'),
@@ -442,7 +456,17 @@
 					return;	// Closed or switched again while the library loaded.
 				}
 				canvas.textContent = '';
-				canvas.appendChild(buildQrSvg(qrcode, target.url));
+				let svg;
+				try {
+					svg = buildQrSvg(qrcode, target.url);
+				} catch (error) {
+					// A QR code holds ~3 kB at most, and a feed decides how long
+					// its links are. Saying so beats the generic load error.
+					console.error(error);
+					canvas.textContent = t('too_long');
+					return;
+				}
+				canvas.appendChild(svg);
 			}).catch(function (error) {
 				console.error(error);
 				if (overlay !== null) {
@@ -577,7 +601,7 @@
 	// link, so it is covered by tests/strip-tracking.test.js. Under the test
 	// runner there is no document and only the pure helpers are exported.
 	if (typeof document === 'undefined') {
-		module.exports = { stripTracking: stripTracking, isTracking: isTracking };
+		module.exports = { stripTracking: stripTracking, isTracking: isTracking, isWebUrl: isWebUrl };
 		return;
 	}
 

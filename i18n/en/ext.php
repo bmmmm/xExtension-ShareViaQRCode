@@ -8,6 +8,7 @@ return array(
 		'unfavourite' => 'Remove from favourites',
 		'title' => 'Share via QR code',
 		'error' => 'The QR code library could not be loaded. Reload the page and try again.',
+		'too_long' => 'This link is too long to fit into a QR code.',
 		'removed_one' => '1 tracking parameter removed: {params}',
 		'removed_many' => '{count} tracking parameters removed: {params}',
 		'target' => array(

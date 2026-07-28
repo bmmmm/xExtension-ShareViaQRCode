@@ -145,6 +145,7 @@ final class ShareViaQRCodeExtension extends Minz_Extension {
 				'removed_one' => _t('ext.share_via_qr_code.removed_one'),
 				'removed_many' => _t('ext.share_via_qr_code.removed_many'),
 				'error' => _t('ext.share_via_qr_code.error'),
+				'too_long' => _t('ext.share_via_qr_code.too_long'),
 			],
 		];
 		return $vars;

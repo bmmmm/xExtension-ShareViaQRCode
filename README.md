@@ -87,6 +87,27 @@ it remains a switch in the overlay; the setting only picks which one is on top.
 The key is free in FreshRSS' default set; if you have reassigned it to a core
 action, that action wins and the extension stays out of the way.
 
+## Security
+
+A feed decides what an article's link is, so that link is untrusted input.
+FreshRSS only HTML-escapes it on the way in (SimplePie sanitises `CONSTRUCT_IRI`
+with `htmlspecialchars`) — it never checks the scheme, and the browser hands the
+decoded value back to JavaScript. The extension therefore:
+
+* **Never builds HTML from feed data.** Everything goes through `textContent`
+  and `createElement`; there is no `innerHTML` anywhere in the extension.
+* **Only puts `http:` and `https:` into a code.** A `javascript:` or `data:`
+  link gets no external target at all — only the FreshRSS permalink remains.
+  Pointing a camera at a code should never be a way to run something. Leading
+  or embedded whitespace and control characters do not smuggle a scheme past
+  the check; `tests/strip-tracking.test.js` covers those cases.
+* **Validates its settings on the way in and on the way out**, so a value edited
+  into `config.php` by hand cannot reach the page either.
+
+The settings form is protected against CSRF by FreshRSS itself: `initAuth()`
+rejects any POST without a valid token, and extensions are not on its exemption
+list.
+
 ## Bundled QR library
 
 `static/vendor/qrcode.js` is
@@ -95,6 +116,12 @@ Kazuhiko Arase, MIT licensed (see `static/vendor/qrcode.LICENSE`), unmodified
 and with no dependencies of its own. It is vendored rather than loaded from a
 CDN because a sane `script-src` policy will not allow a third-party origin, and
 it is fetched lazily on the first click so it costs nothing until used.
+
+It is third-party code running in your browser, so its exact origin is written
+down in `static/vendor/PROVENANCE.md` — upstream tag, commit and git blob id —
+and CI fails if the file changes without the checksum changing with it. That
+makes any edit to it visible in the diff; the blob id lets you verify against
+upstream without trusting this repository at all.
 
 *QR Code* is a registered trademark of DENSO WAVE INCORPORATED.
 
