@@ -134,7 +134,7 @@ jobs:
       # a toolchain over the network, and a failure there used to skip every
       # remaining step — including the checksum guard and the tests.
       - name: Install pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
 
       - name: Set up Node.js
         uses: actions/setup-node@v6
