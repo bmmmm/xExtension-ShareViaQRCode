@@ -137,6 +137,27 @@ upstream without trusting this repository at all.
 
 *QR Code* is a registered trademark of DENSO WAVE INCORPORATED.
 
+## Development
+
+```sh
+# JavaScript tests
+node --test tests/*.test.js
+
+# JavaScript style (ESLint, aligned with FreshRSS core's own eslint.config.js)
+pnpm install
+pnpm run eslint
+
+# PHP style (PHP_CodeSniffer, FreshRSS' own ruleset)
+composer install
+vendor/bin/phpcs .
+
+# PHP static analysis (PHPStan). Needs FreshRSS core checked out as a sibling
+# directory to resolve the Minz_Extension classes this extension extends —
+# see phpstan.neon for why, and .github/workflows/ci.yml for how CI does it.
+git clone --depth 1 https://github.com/FreshRSS/FreshRSS .freshrss-core
+vendor/bin/phpstan analyse
+```
+
 ## Translations
 
 English and German are included. The strings travel through the `JsVars` hook,

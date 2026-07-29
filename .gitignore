@@ -1,3 +1,9 @@
 .DS_Store
 ._*
 Thumbs.db
+
+node_modules/
+vendor/
+tmp/
+# Checked out at CI/local-verification time only, see phpstan.neon.
+.freshrss-core/

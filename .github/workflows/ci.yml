@@ -44,6 +44,52 @@ jobs:
           node --version
           find static -name '*.js' -print0 | xargs -0 -n1 node --check
 
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: 'pnpm'
+
+      - name: Install JS dev dependencies
+        run: pnpm install --frozen-lockfile
+
+      # static/vendor/ is excluded in eslint.config.mjs: third-party, untouched.
+      - name: Check JavaScript style (ESLint)
+        run: pnpm run eslint
+
+      # PHPStan needs the FreshRSS core classes this extension extends
+      # (Minz_Extension and friends), which do not live in this repository.
+      # Mirrors how github.com/FreshRSS/Extensions lints third-party extensions:
+      # check core out as a sibling directory purely to resolve those classes,
+      # excluded from analysis itself (see phpstan.neon).
+      - name: Git checkout FreshRSS core for PHPStan
+        uses: actions/checkout@v7
+        with:
+          repository: FreshRSS/FreshRSS
+          path: .freshrss-core
+          persist-credentials: false
+
+      - name: Use Composer cache
+        id: composer-cache
+        uses: actions/cache@v6
+        with:
+          path: vendor
+          key: ${{ runner.os }}-composer-${{ hashFiles('composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-
+
+      - name: Install PHP dev dependencies
+        run: composer install --prefer-dist --no-progress --no-interaction
+
+      - name: Check PHP code style (PHP_CodeSniffer, FreshRSS' ruleset)
+        run: vendor/bin/phpcs .
+
+      - name: Static analysis (PHPStan)
+        run: vendor/bin/phpstan analyse --no-progress
+
       # The bundled QR library is third-party code that runs in every user's
       # browser. Any edit to it has to show up as a checksum change in the diff.
       - name: Check the bundled library is unmodified
