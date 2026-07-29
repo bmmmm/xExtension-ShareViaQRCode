@@ -4,7 +4,6 @@
 import globals from 'globals';
 import js from '@eslint/js';
 import neostandard, { resolveIgnoresFromGitignore } from 'neostandard';
-import stylistic from '@stylistic/eslint-plugin';
 
 export default [
 	{
@@ -38,9 +37,11 @@ export default [
 	js.configs.recommended,
 	...neostandard(),
 	{
-		plugins: {
-			'@stylistic': stylistic,
-		},
+		// No `plugins` entry for @stylistic: neostandard/style already registers it,
+		// and registering a second copy is an ESLint error rather than a no-op. Core
+		// imports it directly because npm hoists the two requests onto one install;
+		// here it stays a transitive dependency so its version cannot drift from the
+		// one neostandard pins.
 		rules: {
 			'camelcase': 'off',
 			'eqeqeq': 'off',
