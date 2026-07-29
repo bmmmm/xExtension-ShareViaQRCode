@@ -56,8 +56,10 @@ node --test tests/*.test.js
 
 ## Installation
 
-Requires **FreshRSS 1.26.0 or newer** (`Minz_Request::paramIntNull`). Developed
-and tested against 1.29.x.
+Requires **FreshRSS 1.29.0 or newer** — that is where
+`Minz_Extension::setUserConfigurationValue()` and the typed configuration
+getters arrive. CI analyses the extension against exactly that release, so this
+is a checked property rather than a claim.
 
 1. Download this repository and place the `xExtension-ShareViaQRCode` directory
    into the `extensions/` directory of your FreshRSS installation.

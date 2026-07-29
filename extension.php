@@ -27,10 +27,7 @@ final class ShareViaQRCodeExtension extends Minz_Extension {
 		parent::init();
 
 		$this->registerTranslates();
-		// The hook name as a string rather than Minz_HookType::JsVars: the enum
-		// only exists from FreshRSS 1.28, registerHook() has always accepted the
-		// name, and nothing else here needs anything newer than 1.26.
-		$this->registerHook('js_vars', [$this, 'jsVars']);
+		$this->registerHook(Minz_HookType::JsVars, [$this, 'jsVars']);
 
 		Minz_View::appendStyle($this->getFileUrl('style.css'));
 		Minz_View::appendScript($this->getFileUrl('script.js'));
@@ -79,32 +76,29 @@ final class ShareViaQRCodeExtension extends Minz_Extension {
 	/**
 	 * The stored settings, validated. Values written by an earlier version or by
 	 * hand are corrected here too, so the view and the JS context can trust them.
-	 * Reads through getUserConfigurationValue() rather than the typed getters,
-	 * which only exist from FreshRSS 1.29.
 	 *
 	 * @return array{default_target:string, qr_size:int, qr_background:string,
 	 *     qr_background_alpha:int, backdrop_alpha:int}
 	 */
 	public function settings(): array {
-		$asInt = static fn(mixed $value): ?int => is_numeric($value) ? (int) $value : null;
-		$target = $this->getUserConfigurationValue('default_target');
+		$target = $this->getUserConfigurationString('default_target') ?? '';
 
 		return [
-			'default_target' => is_string($target) && in_array($target, self::TARGETS, true)
+			'default_target' => in_array($target, self::TARGETS, true)
 				? $target : self::DEFAULTS['default_target'],
 			'qr_size' => self::clampInt(
-				$asInt($this->getUserConfigurationValue('qr_size')),
+				$this->getUserConfigurationInt('qr_size'),
 				self::SIZE_MIN, self::SIZE_MAX, self::DEFAULTS['qr_size'],
 			),
 			'qr_background' => self::sanitiseColour(
-				$this->getUserConfigurationValue('qr_background'), self::DEFAULTS['qr_background'],
+				$this->getUserConfigurationString('qr_background'), self::DEFAULTS['qr_background'],
 			),
 			'qr_background_alpha' => self::clampInt(
-				$asInt($this->getUserConfigurationValue('qr_background_alpha')),
+				$this->getUserConfigurationInt('qr_background_alpha'),
 				0, 100, self::DEFAULTS['qr_background_alpha'],
 			),
 			'backdrop_alpha' => self::clampInt(
-				$asInt($this->getUserConfigurationValue('backdrop_alpha')),
+				$this->getUserConfigurationInt('backdrop_alpha'),
 				0, 100, self::DEFAULTS['backdrop_alpha'],
 			),
 		];

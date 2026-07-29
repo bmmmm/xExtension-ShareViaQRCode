@@ -6,6 +6,9 @@
 	<arg name="extensions" value="php,phtml"/>
 	<arg name="tab-width" value="4"/>
 	<exclude-pattern>/\.git/*</exclude-pattern>
+	<!-- Tooling scratch space: a git worktree here holds a second copy of
+	     every class, which reads as a duplicate-class warning. -->
+	<exclude-pattern>/\.claude/*</exclude-pattern>
 	<exclude-pattern>/\.freshrss-core/*</exclude-pattern>
 	<exclude-pattern>/node_modules/*</exclude-pattern>
 	<exclude-pattern>/static/vendor/*</exclude-pattern>

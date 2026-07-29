@@ -69,6 +69,9 @@ jobs:
         uses: actions/checkout@v7
         with:
           repository: FreshRSS/FreshRSS
+          # The oldest release this extension supports, so using anything newer
+          # than it fails the build rather than a stranger's install.
+          ref: '1.29.0'
           path: .freshrss-core
           persist-credentials: false
 

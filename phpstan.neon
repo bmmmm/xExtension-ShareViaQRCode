@@ -11,6 +11,11 @@ parameters:
 	# (see .github/workflows/ci.yml) so PHPStan can resolve them; core itself is
 	# scanned for class definitions but never analysed for errors of its own.
 	# Mirrors how github.com/FreshRSS/Extensions lints third-party extensions.
+	#
+	# That checkout is pinned to the oldest supported release rather than to the
+	# development branch, which turns the version requirement in the README from
+	# a claim into something the build checks: reach for an API that release does
+	# not have and this fails.
 	paths:
 		- .
 		- .freshrss-core
@@ -19,6 +24,7 @@ parameters:
 			- .freshrss-core
 		analyseAndScan:
 			- .git/*?
+			- .claude/*?
 			- node_modules/*?
 			- static/vendor/*?
 			- tmp/*?
@@ -42,15 +48,6 @@ parameters:
 		implicitThrows: false
 		checkedExceptionClasses:
 			- 'Minz_Exception'
-	ignoreErrors:
-		-
-			# Deliberate: the typed configuration getters only exist from FreshRSS
-			# 1.29, and this extension supports 1.26+ (see settings() in
-			# extension.php). getUserConfigurationValue() is the compatible choice,
-			# not an oversight.
-			message: '#Call to deprecated method getUserConfigurationValue\(\) of class Minz_Extension#'
-			path: extension.php
-			count: 5
 includes:
 	- vendor/phpstan/phpstan-deprecation-rules/rules.neon
 	- vendor/phpstan/phpstan-strict-rules/rules.neon
