@@ -25,7 +25,7 @@ return array(
 			'qr_background' => 'QR code background',
 			'qr_background_help' => 'Colour and opacity of the area behind the code. The modules themselves stay black.',
 			'backdrop_alpha' => 'Overlay backdrop',
-			'backdrop_alpha_help' => 'How much the page behind the overlay is dimmed. 0 % leaves it fully visible.',
+			'backdrop_alpha_help' => 'How much the page behind the overlay is dimmed. 0 percent leaves it fully visible.',
 			'warn_contrast' => 'The chosen background is too dark against the black modules. Cameras will likely fail to read the code.',
 			'warn_alpha' => 'A partly transparent background lets the page show through the code. Cameras may fail to read it.',
 		),

@@ -1,0 +1,19 @@
+{
+	"name": "xextension-sharevia-qrcode",
+	"private": true,
+	"description": "Linting for the Share via QR Code FreshRSS extension",
+	"license": "AGPL-3.0",
+	"engines": {
+		"node": ">=24"
+	},
+	"scripts": {
+		"eslint": "eslint ."
+	},
+	"devDependencies": {
+		"@eslint/js": "^9.39.4",
+		"@stylistic/eslint-plugin": "2.11.0",
+		"eslint": "^9.39.4",
+		"globals": "^17.4.0",
+		"neostandard": "^0.13.0"
+	}
+}

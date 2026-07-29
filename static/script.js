@@ -120,6 +120,13 @@
 		const head = beforeHash.slice(0, queryStart);
 		const query = beforeHash.slice(queryStart + 1);
 
+		// A bare `?` carries no query string at all, so it is dropped the same way
+		// as a query that is emptied out below (`?utm_source=1&` -> no trailing
+		// `?` either) rather than surviving untouched as a no-op case.
+		if (query === '') {
+			return { url: head + tail, removed: [] };
+		}
+
 		const kept = [];
 		const removed = [];
 		query.split('&').forEach(function (pair) {
@@ -609,7 +616,14 @@
 			// Swallow everything else so the shortcuts of the stream behind the
 			// overlay stay inert. Default actions such as Tab and Enter are left
 			// alone, so the dialog itself stays operable.
-			ev.stopPropagation();
+			//
+			// stopImmediatePropagation() rather than stopPropagation(): this
+			// listener is registered on the capture phase of `window`, and plain
+			// stopPropagation() only stops the event moving on to other targets —
+			// it does nothing about another capture listener some other extension
+			// has registered on that same `window`, which would still see the key
+			// and could act on it right through the modal overlay.
+			ev.stopImmediatePropagation();
 			return;
 		}
 
