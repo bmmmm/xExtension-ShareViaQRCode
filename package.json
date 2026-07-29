@@ -1,4 +1,5 @@
 {
+	"packageManager": "pnpm@11.13.0",
 	"name": "xextension-sharevia-qrcode",
 	"private": true,
 	"description": "Linting for the Share via QR Code FreshRSS extension",

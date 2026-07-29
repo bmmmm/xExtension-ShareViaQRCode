@@ -15,7 +15,7 @@ jobs:
       - name: Git checkout source code
         uses: actions/checkout@v7
 
-      # Pinned to the oldest PHP that FreshRSS 1.26 supports, so a syntax feature
+      # Pinned to the oldest PHP that FreshRSS 1.29 supports, so a syntax feature
       # newer than the declared floor fails here rather than at a user's install.
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
@@ -43,55 +43,6 @@ jobs:
         run: |
           node --version
           find static -name '*.js' -print0 | xargs -0 -n1 node --check
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: '24'
-          cache: 'pnpm'
-
-      - name: Install JS dev dependencies
-        run: pnpm install --frozen-lockfile
-
-      # static/vendor/ is excluded in eslint.config.mjs: third-party, untouched.
-      - name: Check JavaScript style (ESLint)
-        run: pnpm run eslint
-
-      # PHPStan needs the FreshRSS core classes this extension extends
-      # (Minz_Extension and friends), which do not live in this repository.
-      # Mirrors how github.com/FreshRSS/Extensions lints third-party extensions:
-      # check core out as a sibling directory purely to resolve those classes,
-      # excluded from analysis itself (see phpstan.neon).
-      - name: Git checkout FreshRSS core for PHPStan
-        uses: actions/checkout@v7
-        with:
-          repository: FreshRSS/FreshRSS
-          # The oldest release this extension supports, so using anything newer
-          # than it fails the build rather than a stranger's install.
-          ref: '1.29.0'
-          path: .freshrss-core
-          persist-credentials: false
-
-      - name: Use Composer cache
-        id: composer-cache
-        uses: actions/cache@v6
-        with:
-          path: vendor
-          key: ${{ runner.os }}-composer-${{ hashFiles('composer.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-composer-
-
-      - name: Install PHP dev dependencies
-        run: composer install --prefer-dist --no-progress --no-interaction
-
-      - name: Check PHP code style (PHP_CodeSniffer, FreshRSS' ruleset)
-        run: vendor/bin/phpcs .
-
-      - name: Static analysis (PHPStan)
-        run: vendor/bin/phpstan analyse --no-progress
 
       # The bundled QR library is third-party code that runs in every user's
       # browser. Any edit to it has to show up as a checksum change in the diff.
@@ -178,3 +129,55 @@ jobs:
               echo "$file ok\n";
             }
           '
+
+      # Everything above needs nothing but the runner. The linters below pull
+      # a toolchain over the network, and a failure there used to skip every
+      # remaining step — including the checksum guard and the tests.
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: 'pnpm'
+
+      - name: Install JS dev dependencies
+        run: pnpm install --frozen-lockfile
+
+      # static/vendor/ is excluded in eslint.config.mjs: third-party, untouched.
+      - name: Check JavaScript style (ESLint)
+        run: pnpm run eslint
+
+      # PHPStan needs the FreshRSS core classes this extension extends
+      # (Minz_Extension and friends), which do not live in this repository.
+      # Mirrors how github.com/FreshRSS/Extensions lints third-party extensions:
+      # check core out as a sibling directory purely to resolve those classes,
+      # excluded from analysis itself (see phpstan.neon).
+      - name: Git checkout FreshRSS core for PHPStan
+        uses: actions/checkout@v7
+        with:
+          repository: FreshRSS/FreshRSS
+          # The oldest release this extension supports, so using anything newer
+          # than it fails the build rather than a stranger's install.
+          ref: '1.29.0'
+          path: .freshrss-core
+          persist-credentials: false
+
+      - name: Use Composer cache
+        id: composer-cache
+        uses: actions/cache@v6
+        with:
+          path: vendor
+          key: ${{ runner.os }}-composer-${{ hashFiles('composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-
+
+      - name: Install PHP dev dependencies
+        run: composer install --prefer-dist --no-progress --no-interaction
+
+      - name: Check PHP code style (PHP_CodeSniffer, FreshRSS' ruleset)
+        run: vendor/bin/phpcs .
+
+      - name: Static analysis (PHPStan)
+        run: vendor/bin/phpstan analyse --no-progress
