@@ -3,6 +3,12 @@
 Thumbs.db
 
 node_modules/
+
+# npm/yarn lockfiles must never land here — this repo is pnpm-only
+# (supply-chain policy), and a second lockfile silently reintroduces
+# the install behaviour the policy exists to avoid.
+package-lock.json
+yarn.lock
 vendor/
 tmp/
 # Checked out at CI/local-verification time only, see phpstan.neon.
