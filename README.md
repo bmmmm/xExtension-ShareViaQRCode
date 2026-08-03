@@ -61,8 +61,10 @@ Requires **FreshRSS 1.29.0 or newer** — that is where
 getters arrive. CI analyses the extension against exactly that release, so this
 is a checked property rather than a claim.
 
-1. Download this repository and place the `xExtension-ShareViaQRCode` directory
-   into the `extensions/` directory of your FreshRSS installation.
+1. Download the [latest release](https://github.com/bmmmm/xExtension-ShareViaQRCode/releases/latest)
+   and place the `xExtension-ShareViaQRCode` directory into the `extensions/`
+   directory of your FreshRSS installation. The default branch is where work in
+   progress lands, so a release is the version that was actually checked.
 2. Enable **Share via QR Code** under *Configuration → Extensions*.
 
 ## Settings
