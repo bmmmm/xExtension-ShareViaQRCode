@@ -215,9 +215,18 @@
 		return url.href;
 	}
 
+	// The library defaults to a byte encoder that mangles anything outside
+	// Latin-1, so a URL with an umlaut in it would encode to a code nobody can
+	// scan back. Applied wherever the global comes from — this script's own
+	// <script> tag or a copy some other extension loaded first.
+	function adopt(lib) {
+		lib.stringToBytes = lib.stringToBytesFuncs['UTF-8'] || lib.stringToBytes;
+		return lib;
+	}
+
 	function loadLibrary() {
 		if (window.qrcode) {
-			return Promise.resolve(window.qrcode);
+			return Promise.resolve(adopt(window.qrcode));
 		}
 		if (libPromise !== null) {
 			return libPromise;
@@ -232,10 +241,7 @@
 			script.src = url;
 			script.onload = function () {
 				if (window.qrcode) {
-					// Once, rather than on every render: this is a shared global.
-					window.qrcode.stringToBytes =
-						window.qrcode.stringToBytesFuncs['UTF-8'] || window.qrcode.stringToBytes;
-					resolve(window.qrcode);
+					resolve(adopt(window.qrcode));
 				} else {
 					reject(new Error('share_via_qr_code: library loaded but exposes no global'));
 				}
