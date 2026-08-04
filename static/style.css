@@ -34,6 +34,15 @@
 	min-width: 6rem;
 }
 
+/* The page behind the overlay must not scroll away under it. Doing that here
+   rather than by swallowing the scroll keys keeps the dialog itself operable —
+   the filter took Space away from the focused button — and it covers the mouse
+   wheel, which no key filter ever reached. */
+html.qr-scroll-locked,
+html.qr-scroll-locked body {
+	overflow: hidden;
+}
+
 /* Above every z-index the base theme and the bundled themes use (max 9999).
    The backdrop colour is set inline from the user's setting; this is only the
    fallback for the moment before the script runs. */

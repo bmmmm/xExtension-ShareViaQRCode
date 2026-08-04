@@ -71,7 +71,8 @@
 
 	const SVG_NS = 'http://www.w3.org/2000/svg';
 
-	const SCROLL_KEYS = ['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', ' ', 'Spacebar'];
+	// Locks the page behind the overlay, see the rule of the same name in style.css.
+	const SCROLL_LOCK = 'qr-scroll-locked';
 
 	let libPromise = null;
 	let overlay = null;
@@ -327,6 +328,7 @@
 		}
 		overlay.remove();
 		overlay = null;
+		document.documentElement.classList.remove(SCROLL_LOCK);
 		if (lastFocused !== null && document.contains(lastFocused)) {
 			lastFocused.focus();
 		}
@@ -388,6 +390,7 @@
 
 		closeOverlay();
 		lastFocused = document.activeElement;
+		document.documentElement.classList.add(SCROLL_LOCK);
 		const settings = config();
 
 		overlay = document.createElement('div');
@@ -609,13 +612,13 @@
 				ev.preventDefault();
 			} else if (ev.key === 'Tab') {
 				trapFocus(ev);
-			} else if (SCROLL_KEYS.indexOf(ev.key) >= 0) {
-				// Otherwise the page behind the overlay scrolls away under it.
-				ev.preventDefault();
 			}
 			// Swallow everything else so the shortcuts of the stream behind the
-			// overlay stay inert. Default actions such as Tab and Enter are left
-			// alone, so the dialog itself stays operable.
+			// overlay stay inert. No key has its default action taken away, so
+			// the dialog itself stays operable: Space activates the focused
+			// button and the arrow keys scroll a code too tall for the window.
+			// The page behind it is held still by the scroll lock instead, which
+			// also covers the mouse wheel that a key filter never reached.
 			//
 			// stopImmediatePropagation() rather than stopPropagation(): this
 			// listener is registered on the capture phase of `window`, and plain
