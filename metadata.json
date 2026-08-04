@@ -2,7 +2,7 @@
 	"name": "Share via QR Code",
 	"author": "bmmmm",
 	"description": "Shows a large QR code for the current article, so it can be picked up with a phone camera.",
-	"version": "0.5.0",
+	"version": "0.6.0",
 	"url": "https://github.com/bmmmm/xExtension-ShareViaQRCode",
 	"entrypoint": "ShareViaQRCode",
 	"type": "user"

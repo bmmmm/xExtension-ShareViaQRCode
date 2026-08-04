@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 The version that matters for an installation is the one in `metadata.json`;
 each release is tagged `v<version>`.
 
-## [Unreleased]
+## [0.6.0] - 2026-08-04
 
 ### Removed
 
@@ -117,5 +117,5 @@ First release.
   claimed.
 - pnpm-only installs with a release cooldown and no build scripts allowed.
 
-[Unreleased]: https://github.com/bmmmm/xExtension-ShareViaQRCode/compare/v0.5.0...HEAD
+[0.6.0]: https://github.com/bmmmm/xExtension-ShareViaQRCode/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/bmmmm/xExtension-ShareViaQRCode/releases/tag/v0.5.0
