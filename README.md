@@ -93,8 +93,8 @@ Plain <kbd>g</kbd> only; like the core's own single-letter shortcuts it ignores
 modifiers.
 
 The key is free in FreshRSS' default set. If you have reassigned it to a core
-action, that action wins, the extension stays out of the way, and the button
-stops advertising a shortcut it no longer has.
+action, that action wins and the extension stays out of the way; the button in
+the article footer opens the same overlay either way.
 
 ## Security
 

@@ -566,7 +566,8 @@
 		// which the reading view's own footer links do not have, so the button
 		// would stretch the line it joins.
 		button.className = 'qr-share-button';
-		applyOpenLabel(button);
+		button.title = t('open');
+		button.setAttribute('aria-label', t('open'));
 		button.appendChild(buildIcon(ICON_PATH, 16));
 		button.addEventListener('click', function (ev) {
 			ev.preventDefault();
@@ -591,19 +592,8 @@
 		}
 	}
 
-	// The hint is only promised when the key is actually ours: a user who has
-	// reassigned it to a core action gets the button without a shortcut that
-	// would do nothing.
-	function applyOpenLabel(button) {
-		const label = shortcutIsTaken() ? t('open') : t('open') + ' (' + SHORTCUT.toLowerCase() + ')';
-		button.title = label;
-		button.setAttribute('aria-label', label);
-	}
-
-	function refreshLabels() {
-		document.querySelectorAll('.qr-share-button').forEach(applyOpenLabel);
-	}
-
+	// A user who has reassigned the key to a core action keeps that action: the
+	// extension stays out of the way rather than fighting the core for a key.
 	function shortcutIsTaken() {
 		const shortcuts = window.context && window.context.shortcuts;
 		if (!shortcuts) {
@@ -711,14 +701,13 @@
 		return;
 	}
 
-	// The script is loaded asynchronously, so the global context may arrive
-	// either before or after us: insert the buttons as soon as the DOM allows
-	// and refresh their labels if the translations show up later.
+	// The script is loaded asynchronously, so the buttons go in as soon as the
+	// DOM allows. FALLBACK_I18N covers the window in which the global context
+	// has not arrived yet.
 	if (document.readyState === 'loading') {
 		document.addEventListener('DOMContentLoaded', init);
 	} else {
 		init();
 	}
-	document.addEventListener('freshrss:globalContextLoaded', refreshLabels);
 	window.addEventListener('keydown', onKeydown, true);
 })();
