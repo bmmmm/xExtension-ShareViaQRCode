@@ -3,7 +3,7 @@
 	"name": "xextension-sharevia-qrcode",
 	"private": true,
 	"description": "Linting for the Share via QR Code FreshRSS extension",
-	"license": "AGPL-3.0",
+	"license": "AGPL-3.0-only",
 	"engines": {
 		"node": ">=24"
 	},
