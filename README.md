@@ -137,6 +137,17 @@ and with no dependencies of its own. It is vendored rather than loaded from a
 CDN because a sane `script-src` policy will not allow a third-party origin, and
 it is fetched lazily on the first click so it costs nothing until used.
 
+Most of it never runs. The extension asks the library for the module matrix and
+draws its own SVG from it, so the bundled HTML-table, SVG, `<img>`, ASCII and
+canvas renderers, the GIF encoder with its base64 streams, and the Kanji mode
+with the Shift-JIS conversion it looks up are all dead weight — roughly 21 of
+the 57 kB, measured, are code this extension has no call site for.
+
+They stay in the file on purpose: it is **byte-identical to the upstream build**,
+which is the whole point of writing the git blob id down. Trimming it would make
+it a modified copy, and a checksum over a modified copy only proves that this
+repository agrees with itself.
+
 It is third-party code running in your browser, so its exact origin is written
 down in `static/vendor/PROVENANCE.md` — upstream tag, commit and git blob id —
 and CI fails if the file changes without the checksum changing with it. That
