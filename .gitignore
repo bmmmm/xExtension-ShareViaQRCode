@@ -2,16 +2,19 @@
 ._*
 Thumbs.db
 
-node_modules/
+# All anchored to the repository root. Unanchored, `vendor/` also matches
+# static/vendor/, and the bundled QR library — the one directory whose contents
+# have to be visible in every diff — would go untracked without a word.
+/node_modules/
 
 # npm/yarn lockfiles must never land here — this repo is pnpm-only
 # (supply-chain policy), and a second lockfile silently reintroduces
 # the install behaviour the policy exists to avoid.
 package-lock.json
 yarn.lock
-vendor/
-tmp/
+/vendor/
+/tmp/
 # Checked out at CI/local-verification time only, see phpstan.neon.
-.freshrss-core/
+/.freshrss-core/
 # Tooling scratch space (agent worktrees, local settings).
 .claude/
