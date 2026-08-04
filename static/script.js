@@ -90,12 +90,6 @@
 		return (i18n && i18n[key]) || FALLBACK_I18N[key];
 	}
 
-	function format(template, values) {
-		return template.replace(/\{(\w+)\}/g, function (match, name) {
-			return Object.prototype.hasOwnProperty.call(values, name) ? values[name] : match;
-		});
-	}
-
 	function isTracking(name) {
 		const lower = name.toLowerCase();
 		return TRACKING_PARAMS.has(lower) || TRACKING_PREFIXES.some(prefix => lower.startsWith(prefix));
@@ -484,8 +478,8 @@
 			// Split on the placeholder so the parameter names can be marked up
 			// as code without ever building HTML from a translated string.
 			const parts = template.split('{params}');
-			const values = { count: model.removed.length };
-			note.appendChild(document.createTextNode(format(parts[0], values)));
+			const count = String(model.removed.length);
+			note.appendChild(document.createTextNode(parts[0].replace('{count}', count)));
 			model.removed.forEach(function (name, index) {
 				if (index > 0) {
 					note.appendChild(document.createTextNode(', '));
@@ -494,7 +488,7 @@
 				code.textContent = name;
 				note.appendChild(code);
 			});
-			note.appendChild(document.createTextNode(format(parts.slice(1).join(''), values)));
+			note.appendChild(document.createTextNode(parts.slice(1).join('').replace('{count}', count)));
 			body.appendChild(note);
 		}
 
