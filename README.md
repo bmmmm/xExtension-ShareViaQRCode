@@ -189,7 +189,7 @@ so adding a language only means adding an `i18n/<code>/ext.php` file.
 
 ## Licence
 
-[AGPL-3.0](LICENSE), matching FreshRSS itself.
+[AGPL-3.0-only](LICENSE), matching FreshRSS itself.
 
 ## Support
 
