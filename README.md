@@ -67,6 +67,8 @@ is a checked property rather than a claim.
    progress lands, so a release is the version that was actually checked.
 2. Enable **Share via QR Code** under *Configuration → Extensions*.
 
+What changed between releases is in [CHANGELOG.md](CHANGELOG.md).
+
 ## Settings
 
 Under *Configuration → Extensions → Share via QR Code*:
@@ -127,6 +129,9 @@ decoded value back to JavaScript. The extension therefore:
 The settings form is protected against CSRF by FreshRSS itself: `initAuth()`
 rejects any POST without a valid token, and extensions are not on its exemption
 list.
+
+Found a hole? [.github/SECURITY.md](.github/SECURITY.md) has the private address
+and what a report needs to be reproducible.
 
 ## Bundled QR library
 
