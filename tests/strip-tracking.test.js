@@ -227,4 +227,10 @@ test('repeated tracker names are reported once', () => {
 		stripTracking('https://e.example/a?utm_source=x&utm_source=y&id=1'),
 		{ url: 'https://e.example/a?id=1', removed: ['utm_source'] }
 	);
+	// The names are matched case-insensitively, so two spellings of one name are
+	// one tracker. The first spelling is what the overlay shows.
+	assert.deepEqual(
+		stripTracking('https://e.example/a?UTM_Source=x&utm_source=y&id=1'),
+		{ url: 'https://e.example/a?id=1', removed: ['UTM_Source'] }
+	);
 });

@@ -127,6 +127,10 @@
 
 		const kept = [];
 		const removed = [];
+		// Names are matched case-insensitively, so they have to be deduplicated
+		// that way too — otherwise `utm_source` and `UTM_Source` are named twice
+		// in the overlay as if they were two different parameters.
+		const seen = new Set();
 		query.split('&').forEach(function (pair) {
 			if (pair === '') {
 				return;
@@ -140,8 +144,10 @@
 				// A malformed escape means the name is not one of ours anyway.
 			}
 			if (isTracking(name)) {
-				if (!removed.includes(name)) {
-					removed.push(name);
+				const lower = name.toLowerCase();
+				if (!seen.has(lower)) {
+					seen.add(lower);
+					removed.push(name);	// The first spelling is the one shown.
 				}
 			} else {
 				kept.push(pair);
