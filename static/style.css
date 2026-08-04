@@ -164,8 +164,10 @@ html.qr-scroll-locked body {
 	margin: 0;
 	font-family: monospace;
 	font-size: 0.85rem;
+	/* `anywhere` alone: it breaks a long URL wherever it has to, but tries the
+	   ordinary opportunities first. `word-break: break-all` on top of it threw
+	   that preference away and cut mid-word while a slash was still coming. */
 	overflow-wrap: anywhere;
-	word-break: break-all;
 	user-select: all;
 }
 
