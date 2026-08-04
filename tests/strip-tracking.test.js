@@ -178,6 +178,49 @@ test('an http(s) URL without a host is rejected', () => {
 	assert.equal(isWebLink('http:///path'), true);
 });
 
+// --- Bidi controls ----------------------------------------------------------
+// The URL is printed under the code so that a person can read what the code
+// carries. That only works if the printed order is the stored order, and CSS
+// does not deliver it: `unicode-bidi: bidi-override` overrides the implicit
+// algorithm while the explicit formatting characters keep reordering the line.
+// So they are replaced with their code point before the text is shown.
+
+const { escapeBidi } = require('../static/script.js');
+
+const BACKSLASH = String.fromCharCode(92);
+// Every character the escaping is meant to catch: ALM, LRM, RLM, the
+// LRE/RLE/PDF/LRO/RLO embeddings and the LRI/RLI/FSI/PDI isolates.
+const CONTROLS = [0x061C, 0x200E, 0x200F, 0x202A, 0x202B, 0x202C, 0x202D, 0x202E,
+	0x2066, 0x2067, 0x2068, 0x2069];
+
+test('a right-to-left override is printed as its code point, not applied', () => {
+	const rlo = String.fromCharCode(0x202E);
+	assert.equal(
+		escapeBidi('https://e.example/' + rlo + 'gnp.kp'),
+		'https://e.example/' + BACKSLASH + 'u202Egnp.kp'
+	);
+});
+
+test('every bidi control character is caught', () => {
+	for (const code of CONTROLS) {
+		const expected = BACKSLASH + 'u' + code.toString(16).toUpperCase().padStart(4, '0');
+		assert.equal(escapeBidi(String.fromCharCode(code)), expected, expected);
+	}
+});
+
+// Only the reordering characters go; a URL is allowed to contain anything else.
+test('text without bidi controls is returned unchanged', () => {
+	for (const harmless of [
+		'https://e.example/a?q=1#top',
+		'https://übung.example/münchen',
+		'https://e.example/' + String.fromCodePoint(0x1F600),
+		'https://e.example/' + String.fromCharCode(0x200B),	// zero-width space
+		'',
+	]) {
+		assert.equal(escapeBidi(harmless), harmless, JSON.stringify(harmless));
+	}
+});
+
 // The same tracker twice must not be named twice in the overlay.
 test('repeated tracker names are reported once', () => {
 	assert.deepEqual(

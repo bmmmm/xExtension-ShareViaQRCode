@@ -178,6 +178,35 @@
 		}
 	}
 
+	// The printed URL exists so that a person can read what the code carries
+	// before scanning it, which only works if the printed order is the stored
+	// order. A single U+202E turns `evil.example/kp.gnp` into what looks like
+	// `png.pk/example.live`, and the CSS that used to stand here —
+	// `unicode-bidi: bidi-override` — does not stop that: the override applies
+	// to the implicit bidi algorithm, while U+202A…U+202E and U+2066…U+2069 are
+	// explicit formatting characters that keep their effect regardless.
+	//
+	// So the characters are taken out of the text entirely and shown as their
+	// code point. Only the printed copy is escaped; the code encodes the URL as
+	// it stands, because that is the URL the link actually is.
+	// ALM, LRM and RLM, the LRE…RLO embeddings with their PDF, and the LRI…PDI
+	// isolates. As code points rather than as characters: written out literally
+	// they would reorder the very line that lists them.
+	const BIDI_CONTROLS = new Set([
+		0x061C, 0x200E, 0x200F,
+		0x202A, 0x202B, 0x202C, 0x202D, 0x202E,
+		0x2066, 0x2067, 0x2068, 0x2069,
+	]);
+
+	function escapeBidi(text) {
+		return Array.from(text, function (character) {
+			const code = character.charCodeAt(0);
+			return BIDI_CONTROLS.has(code)
+				? '\\u' + code.toString(16).toUpperCase().padStart(4, '0')
+				: character;
+		}).join('');
+	}
+
 	// `?state=3&search=e:<id>` is FreshRSS' internal permalink for a single
 	// article. `state=3` is required — the default filter only lists unread
 	// articles, so without it a read article yields an empty page.
@@ -446,7 +475,6 @@
 
 		const urlText = document.createElement('p');
 		urlText.className = 'qr-url';
-		urlText.setAttribute('dir', 'ltr');
 		body.appendChild(urlText);
 
 		let note = null;
@@ -477,13 +505,14 @@
 				button.classList.toggle('active', selected);
 				button.setAttribute('aria-pressed', selected ? 'true' : 'false');
 			});
-			urlText.textContent = target.url;
+			const printed = escapeBidi(target.url);
+			urlText.textContent = printed;
 			if (note !== null) {
 				note.hidden = !target.note;
 			}
 			canvas.textContent = '';
 			loadLibrary().then(function (qrcode) {
-				if (overlay === null || urlText.textContent !== target.url) {
+				if (overlay === null || urlText.textContent !== printed) {
 					return;	// Closed or switched again while the library loaded.
 				}
 				canvas.textContent = '';
@@ -671,7 +700,12 @@
 	// link, so it is covered by tests/strip-tracking.test.js. Under the test
 	// runner there is no document and only the pure helpers are exported.
 	if (typeof document === 'undefined') {
-		module.exports = { stripTracking: stripTracking, isTracking: isTracking, isWebLink: isWebLink };
+		module.exports = {
+			stripTracking: stripTracking,
+			isTracking: isTracking,
+			isWebLink: isWebLink,
+			escapeBidi: escapeBidi,
+		};
 		return;
 	}
 

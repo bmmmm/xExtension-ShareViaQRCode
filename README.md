@@ -114,9 +114,15 @@ decoded value back to JavaScript. The extension therefore:
   a version of it resolved against the current page: `https:evil.example/x` and
   `//evil.example/x` look local next to the reader's URL but mean something
   else to a phone reading the code on its own, so both are rejected.
-* **Prints the URL with the bidi algorithm overridden.** A link containing
-  U+202E would otherwise display a different host than the code carries, which
-  would defeat the point of printing it.
+* **Escapes bidi control characters out of the printed URL.** A link carrying
+  U+202E would otherwise display a different host than the code contains, which
+  defeats the point of printing it. The twelve reordering characters (ALM, LRM,
+  RLM, the LRE…RLO embeddings with their PDF, and the LRI…PDI isolates) are
+  replaced with a visible `\uXXXX` escape, so the line reads in the order the
+  string is stored in. CSS cannot do this: `unicode-bidi: bidi-override`
+  overrides the *implicit* bidi algorithm, and these are *explicit* formatting
+  characters that keep their effect right through it. Only the printed copy is
+  escaped; the code encodes the URL as it stands, because that is the link.
 * **Validates its settings on the way in and on the way out**, so a value edited
   into `config.php` by hand cannot reach the page either.
 
