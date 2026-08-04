@@ -427,8 +427,17 @@
 
 		overlay = document.createElement('div');
 		overlay.id = 'share-via-qr-code';
+
+		// A click reports the common ancestor of press and release, so selecting
+		// the printed URL and letting go anywhere past the dialog delivered a
+		// click on the backdrop and closed the overlay over the selection. Both
+		// ends have to be on the backdrop for it to count as a click beside it.
+		let pressedBackdrop = false;
+		overlay.addEventListener('mousedown', function (ev) {
+			pressedBackdrop = ev.target === overlay;
+		});
 		overlay.addEventListener('click', function (ev) {
-			if (ev.target === overlay) {
+			if (ev.target === overlay && pressedBackdrop) {
 				closeOverlay();
 			}
 		});
@@ -572,6 +581,11 @@
 		button.addEventListener('click', function (ev) {
 			ev.preventDefault();
 			ev.stopPropagation();
+			// Not every browser focuses a button when it is clicked — Safari does
+			// not — and the overlay remembers document.activeElement to hand
+			// focus back to on close. Without this that would be <body>, and the
+			// caret would land at the top of the page instead of on the article.
+			button.focus();
 			openOverlay(flux);
 		});
 
