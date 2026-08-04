@@ -41,13 +41,22 @@ final class ShareViaQRCodeExtension extends Minz_Extension {
 		$current = $this->settings();
 
 		$target = Minz_Request::paramString('default_target');
-		$this->setUserConfigurationValue(
-			'default_target',
-			in_array($target, self::TARGETS, true) ? $target : $current['default_target'],
-		);
-		$this->setUserConfigurationValue('qr_size', self::clampInt(
+		if (!in_array($target, self::TARGETS, true)) {
+			$target = $current['default_target'];
+		}
+		$size = self::clampInt(
 			Minz_Request::paramIntNull('qr_size'), self::SIZE_MIN, self::SIZE_MAX, $current['qr_size'],
-		));
+		);
+
+		// Each call writes the whole user configuration back to disk, so only the
+		// fields that actually moved are stored: saving the form untouched is
+		// then no writes at all rather than one per setting.
+		if ($target !== $current['default_target']) {
+			$this->setUserConfigurationValue('default_target', $target);
+		}
+		if ($size !== $current['qr_size']) {
+			$this->setUserConfigurationValue('qr_size', $size);
+		}
 
 		Minz_Request::good(_t('feedback.conf.updated'), [
 			'c' => 'extension', 'a' => 'configure', 'params' => ['e' => urlencode($this->getName())],
