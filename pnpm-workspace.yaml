@@ -1,4 +1,7 @@
-# Supply-chain hardening (applies even to this single-package repo).
-# See ~/ops/reference/pnpm-supply-chain.md for the rationale.
-minimumReleaseAge: 4320   # 3-day cooldown — freshly compromised releases are usually yanked within hours
+# Supply-chain hardening (applies even to this single-package repo). A hijacked
+# npm release is normally spotted and yanked within hours, so refusing anything
+# younger than the cooldown below skips most of that window; install scripts are
+# the other half, and none may run unless it is named here.
+# Both settings: https://pnpm.io/settings
+minimumReleaseAge: 4320   # 3 days, in minutes
 onlyBuiltDependencies: [] # allowlist for build/postinstall scripts; empty = none may run
