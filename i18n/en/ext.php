@@ -19,7 +19,7 @@ return array(
 		),
 		'conf' => array(
 			'default_target' => 'Preselected link',
-			'default_target_help' => 'Which link the overlay shows first. The others stay one click away.',
+			'default_target_help' => 'Which link the overlay shows first; the others stay one click away. “Cleaned” is the external article link with the known tracking parameters removed — when there was nothing to remove, the overlay labels that same link “Article”.',
 			'qr_size' => 'QR code size',
 			'qr_size_help' => 'Edge length in pixels, %d to %d. Larger codes are easier to scan from a distance; on narrow windows the code shrinks to fit anyway.',
 		),
