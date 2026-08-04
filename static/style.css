@@ -20,16 +20,8 @@
 }
 
 /* Configuration page: the themes stretch every input to the form width, which
-   turns the colour swatch into an unrecognisable bar. */
-#qr_background {
-	width: 4rem;
-	min-width: 4rem;
-	padding: 0.125rem;
-}
-
-#qr_size,
-#qr_background_alpha,
-#backdrop_alpha {
+   leaves a three-digit number box the width of the page. */
+#qr_size {
 	width: 6rem;
 	min-width: 6rem;
 }
@@ -44,8 +36,8 @@ html.qr-scroll-locked body {
 }
 
 /* Above every z-index the base theme and the bundled themes use (max 9999).
-   The backdrop colour is set inline from the user's setting; this is only the
-   fallback for the moment before the script runs. */
+   The backdrop takes the theme's own modal colour where there is one, so a dark
+   theme does not get a black film over an already dark page. */
 #share-via-qr-code {
 	display: flex;
 	align-items: center;

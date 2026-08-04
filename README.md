@@ -75,14 +75,12 @@ Under *Configuration → Extensions → Share via QR Code*:
 |---|---|---|
 | Preselected link | Cleaned | Which target the overlay opens on. It is a preference, not a rule: a preselection that does not exist for an article (no tracking to strip, no entry id) falls back to the first one that does. |
 | QR code size | 400 px | 200–800. A wider setting still shrinks to fit a narrow window. |
-| QR code background | `#ffffff`, 100 % | Colour and opacity of the area behind the code. |
-| Overlay backdrop | 65 % | How far the page behind the overlay is dimmed. |
 
-The modules of the code stay black whatever the background is set to, because
-inverted codes are read unreliably. If the chosen background is too dark or too
-transparent to scan, the settings page says so instead of quietly refusing the
-value — the same reasoning as for the removed-parameters line: tell the user,
-then let them decide.
+That is the whole list on purpose. The code is drawn black on opaque white and
+is not configurable: an inverted or see-through code is read unreliably, and the
+one thing it has to do is scan on the first try. The overlay backdrop follows
+the theme's own modal colour, so a dark theme does not get a black film laid
+over an already dark page.
 
 Whether a link should be internal or external stays a per-article decision, so
 it remains a switch in the overlay; the setting only picks which one is on top.

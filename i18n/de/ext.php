@@ -22,12 +22,6 @@ return array(
 			'default_target_help' => 'Welchen Link das Overlay zuerst zeigt. Die anderen bleiben einen Klick entfernt.',
 			'qr_size' => 'Grösse des QR-Codes',
 			'qr_size_help' => 'Kantenlänge in Pixeln, %d bis %d. Grössere Codes lassen sich aus mehr Abstand scannen; in schmalen Fenstern verkleinert sich der Code ohnehin.',
-			'qr_background' => 'Hintergrund des QR-Codes',
-			'qr_background_help' => 'Farbe und Deckkraft der Fläche hinter dem Code. Die Module selbst bleiben schwarz.',
-			'backdrop_alpha' => 'Overlay-Hintergrund',
-			'backdrop_alpha_help' => 'Wie stark die Seite hinter dem Overlay abgedunkelt wird. 0 Prozent lässt sie voll sichtbar.',
-			'warn_contrast' => 'Der gewählte Hintergrund ist zu dunkel für die schwarzen Module. Kameras werden den Code vermutlich nicht lesen.',
-			'warn_alpha' => 'Ein teilweise transparenter Hintergrund lässt die Seite durch den Code scheinen. Kameras lesen ihn dann möglicherweise nicht.',
 		),
 	),
 );

@@ -56,9 +56,6 @@
 	const FALLBACK_SETTINGS = {
 		default_target: 'cleaned',
 		qr_size: 400,
-		qr_background: '#ffffff',
-		qr_background_alpha: 100,
-		backdrop_alpha: 65,
 	};
 
 	const ICON_PATH =
@@ -278,15 +275,12 @@
 		svg.setAttribute('role', 'img');
 		svg.setAttribute('aria-label', t('title'));
 
-		// The modules stay black whatever the background is set to. Inverted codes
-		// are read unreliably, so the configuration page warns about a dark or
-		// see-through background rather than flipping the modules.
-		const settings = config();
+		// Black on opaque white, not on the theme's colours: an inverted or
+		// see-through code is read unreliably, and the code has one job.
 		const background = document.createElementNS(SVG_NS, 'rect');
 		background.setAttribute('width', String(size));
 		background.setAttribute('height', String(size));
-		background.setAttribute('fill', settings.qr_background);
-		background.setAttribute('fill-opacity', String(settings.qr_background_alpha / 100));
+		background.setAttribute('fill', '#fff');
 		svg.appendChild(background);
 
 		const modules = document.createElementNS(SVG_NS, 'path');
@@ -424,7 +418,6 @@
 
 		overlay = document.createElement('div');
 		overlay.id = 'share-via-qr-code';
-		overlay.style.backgroundColor = 'rgba(0, 0, 0, ' + settings.backdrop_alpha / 100 + ')';
 		overlay.addEventListener('click', function (ev) {
 			if (ev.target === overlay) {
 				closeOverlay();

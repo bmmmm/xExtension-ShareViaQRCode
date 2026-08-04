@@ -7,20 +7,10 @@ final class ShareViaQRCodeExtension extends Minz_Extension {
 	private const DEFAULTS = [
 		'default_target' => 'cleaned',
 		'qr_size' => 400,
-		'qr_background' => '#ffffff',
-		'qr_background_alpha' => 100,
-		'backdrop_alpha' => 65,
 	];
 
 	private const SIZE_MIN = 200;
 	private const SIZE_MAX = 800;
-
-	/**
-	 * Below this WCAG contrast ratio against the black modules a camera starts
-	 * to struggle, and below full opacity the page shows through them.
-	 */
-	private const MIN_CONTRAST = 7.0;
-	private const MIN_ALPHA = 85;
 
 	#[\Override]
 	public function init(): void {
@@ -58,15 +48,6 @@ final class ShareViaQRCodeExtension extends Minz_Extension {
 		$this->setUserConfigurationValue('qr_size', self::clampInt(
 			Minz_Request::paramIntNull('qr_size'), self::SIZE_MIN, self::SIZE_MAX, $current['qr_size'],
 		));
-		$this->setUserConfigurationValue('qr_background', self::sanitiseColour(
-			Minz_Request::paramString('qr_background'), $current['qr_background'],
-		));
-		$this->setUserConfigurationValue('qr_background_alpha', self::clampInt(
-			Minz_Request::paramIntNull('qr_background_alpha'), 0, 100, $current['qr_background_alpha'],
-		));
-		$this->setUserConfigurationValue('backdrop_alpha', self::clampInt(
-			Minz_Request::paramIntNull('backdrop_alpha'), 0, 100, $current['backdrop_alpha'],
-		));
 
 		Minz_Request::good(_t('feedback.conf.updated'), [
 			'c' => 'extension', 'a' => 'configure', 'params' => ['e' => urlencode($this->getName())],
@@ -77,8 +58,7 @@ final class ShareViaQRCodeExtension extends Minz_Extension {
 	 * The stored settings, validated. Values written by an earlier version or by
 	 * hand are corrected here too, so the view and the JS context can trust them.
 	 *
-	 * @return array{default_target:string, qr_size:int, qr_background:string,
-	 *     qr_background_alpha:int, backdrop_alpha:int}
+	 * @return array{default_target:string, qr_size:int}
 	 */
 	public function settings(): array {
 		$target = $this->getUserConfigurationString('default_target') ?? '';
@@ -90,33 +70,7 @@ final class ShareViaQRCodeExtension extends Minz_Extension {
 				$this->getUserConfigurationInt('qr_size'),
 				self::SIZE_MIN, self::SIZE_MAX, self::DEFAULTS['qr_size'],
 			),
-			'qr_background' => self::sanitiseColour(
-				$this->getUserConfigurationString('qr_background'), self::DEFAULTS['qr_background'],
-			),
-			'qr_background_alpha' => self::clampInt(
-				$this->getUserConfigurationInt('qr_background_alpha'),
-				0, 100, self::DEFAULTS['qr_background_alpha'],
-			),
-			'backdrop_alpha' => self::clampInt(
-				$this->getUserConfigurationInt('backdrop_alpha'),
-				0, 100, self::DEFAULTS['backdrop_alpha'],
-			),
 		];
-	}
-
-	/** @return list<string> the reasons why the current colours may not scan, empty if they are fine */
-	public function scanWarnings(): array {
-		$settings = $this->settings();
-		$warnings = [];
-
-		if (self::contrastWithBlack($settings['qr_background']) < self::MIN_CONTRAST) {
-			$warnings[] = _t('ext.share_via_qr_code.conf.warn_contrast');
-		}
-		if ($settings['qr_background_alpha'] < self::MIN_ALPHA) {
-			$warnings[] = _t('ext.share_via_qr_code.conf.warn_alpha');
-		}
-
-		return $warnings;
 	}
 
 	/** @return list<string> */
@@ -167,24 +121,5 @@ final class ShareViaQRCodeExtension extends Minz_Extension {
 			return $fallback;
 		}
 		return max($min, min($max, $value));
-	}
-
-	private static function sanitiseColour(mixed $value, string $fallback): string {
-		return is_string($value) && preg_match('/^#[0-9a-f]{6}$/i', $value) === 1
-			? strtolower($value)
-			: $fallback;
-	}
-
-	/** WCAG contrast ratio of an opaque colour against the black QR modules. */
-	private static function contrastWithBlack(string $hex): float {
-		$channel = static function (int $value): float {
-			$s = $value / 255;
-			return $s <= 0.03928 ? $s / 12.92 : (($s + 0.055) / 1.055) ** 2.4;
-		};
-		$luminance = 0.2126 * $channel((int) hexdec(substr($hex, 1, 2)))
-			+ 0.7152 * $channel((int) hexdec(substr($hex, 3, 2)))
-			+ 0.0722 * $channel((int) hexdec(substr($hex, 5, 2)));
-
-		return ($luminance + 0.05) / 0.05;
 	}
 }
