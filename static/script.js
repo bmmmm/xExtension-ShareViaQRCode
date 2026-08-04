@@ -311,10 +311,13 @@
 	function targetsFor(flux) {
 		const raw = flux.getAttribute('data-link') || '';
 		const entryId = flux.getAttribute('data-entry') || '';
-		const cleaned = stripTracking(raw);
+		// A link that is not a web link gets no external target at all, so there
+		// is nothing to strip from it and nothing to report about it either.
+		const isWeb = isWebLink(raw);
+		const cleaned = isWeb ? stripTracking(raw) : { url: raw, removed: [] };
 		const targets = [];
 
-		if (isWebLink(raw)) {
+		if (isWeb) {
 			targets.push({
 				key: 'cleaned',
 				label: cleaned.removed.length > 0 ? t('target_cleaned') : t('target_article'),
