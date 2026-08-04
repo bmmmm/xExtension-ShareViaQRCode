@@ -2,7 +2,8 @@
 ._*
 Thumbs.db
 
-# All anchored to the repository root. Unanchored, `vendor/` also matches
+# The directory rules (/node_modules/, /vendor/, /tmp/, /.freshrss-core/) are
+# anchored to the repository root. Unanchored, `vendor/` also matches
 # static/vendor/, and the bundled QR library — the one directory whose contents
 # have to be visible in every diff — would go untracked without a word.
 /node_modules/

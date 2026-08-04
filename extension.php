@@ -65,7 +65,8 @@ final class ShareViaQRCodeExtension extends Minz_Extension {
 
 	/**
 	 * The stored settings, validated. Values written by an earlier version or by
-	 * hand are corrected here too, so the view and the JS context can trust them.
+	 * hand are corrected on every read — never written back — so the view and
+	 * the JS context can trust them while the file keeps what the user put there.
 	 *
 	 * @return array{default_target:string, qr_size:int}
 	 */
