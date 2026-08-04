@@ -433,11 +433,16 @@
 		// click on the backdrop and closed the overlay over the selection. Both
 		// ends have to be on the backdrop for it to count as a click beside it.
 		let pressedBackdrop = false;
+		let releasedBackdrop = false;
 		overlay.addEventListener('mousedown', function (ev) {
 			pressedBackdrop = ev.target === overlay;
+			releasedBackdrop = false;
+		});
+		overlay.addEventListener('mouseup', function (ev) {
+			releasedBackdrop = ev.target === overlay;
 		});
 		overlay.addEventListener('click', function (ev) {
-			if (ev.target === overlay && pressedBackdrop) {
+			if (ev.target === overlay && pressedBackdrop && releasedBackdrop) {
 				closeOverlay();
 			}
 		});
@@ -486,6 +491,11 @@
 
 		const urlText = document.createElement('p');
 		urlText.className = 'qr-url';
+		// escapeBidi() handles the explicit control characters; a fixed base
+		// direction handles the implicit algorithm, which would otherwise lay
+		// the URL out RTL under FreshRSS's rtl locales and let RTL script
+		// letters reorder it. The two defences compose.
+		urlText.setAttribute('dir', 'ltr');
 		body.appendChild(urlText);
 
 		let note = null;

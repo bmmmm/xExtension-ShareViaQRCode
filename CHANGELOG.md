@@ -33,7 +33,9 @@ each release is tagged `v<version>`.
   point. The `unicode-bidi: bidi-override` rule that used to stand for this does
   not neutralise them — it overrides the *implicit* bidi algorithm, while these
   are *explicit* formatting characters — so a link carrying U+202E could still
-  display a different host than the code contained.
+  display a different host than the code contained. The override and a fixed
+  `dir="ltr"` stay in place for what they do cover: implicit reordering by RTL
+  script letters or an RTL page locale.
 - A tracking parameter is named once in the overlay however it was spelled. The
   names are matched case-insensitively but were deduplicated by raw spelling, so
   `utm_source` and `UTM_Source` were listed as two parameters.

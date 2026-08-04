@@ -121,8 +121,12 @@ decoded value back to JavaScript. The extension therefore:
   replaced with a visible `\uXXXX` escape, so the line reads in the order the
   string is stored in. CSS cannot do this: `unicode-bidi: bidi-override`
   overrides the *implicit* bidi algorithm, and these are *explicit* formatting
-  characters that keep their effect right through it. Only the printed copy is
-  escaped; the code encodes the URL as it stands, because that is the link.
+  characters that keep their effect right through it. The override and a fixed
+  `dir="ltr"` are still applied on top, against the implicit algorithm itself —
+  plain RTL script letters in a URL, or an RTL page locale, would otherwise
+  reorder the line without any control character involved. Only the printed
+  copy is escaped; the code encodes the URL as it stands, because that is the
+  link.
 * **Validates its settings on the way in and on the way out**, so a value edited
   into `config.php` by hand cannot reach the page either.
 

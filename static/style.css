@@ -158,12 +158,16 @@ html.qr-scroll-locked body {
 /* A link carrying U+202E would render as a different host than the one in the
    code. `unicode-bidi: bidi-override` does not stop that — it overrides the
    implicit algorithm, not the explicit formatting characters — so the script
-   replaces them with their code point before the text gets here. */
+   replaces those with their code point before the text gets here. The
+   override still earns its place against the implicit algorithm: it keeps
+   RTL script letters inside a URL in logical order, paired with the fixed
+   dir="ltr" the script sets on this element. */
 #share-via-qr-code .qr-url {
 	width: 100%;
 	margin: 0;
 	font-family: monospace;
 	font-size: 0.85rem;
+	unicode-bidi: bidi-override;
 	/* `anywhere` alone: it breaks a long URL wherever it has to, but tries the
 	   ordinary opportunities first. `word-break: break-all` on top of it threw
 	   that preference away and cut mid-word while a slash was still coming. */
