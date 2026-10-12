@@ -204,15 +204,25 @@
 		}).join('');
 	}
 
-	// `?state=3&search=e:<id>` is FreshRSS' internal permalink for a single
-	// article. `state=3` is required — the default filter only lists unread
-	// articles, so without it a read article yields an empty page.
-	function internalUrl(entryId) {
-		const base = (window.context && window.context.urls && window.context.urls.index) || './';
-		const url = new URL(base, window.location.href);
+	// `?get=Z&state=3&search=e:<id>` is FreshRSS' internal permalink for a
+	// single article. `state=3` is required — the default filter only lists
+	// unread articles, so without it a read article yields an empty page.
+	// `get=Z` is required too: the default stream keeps `f.priority >= 10`,
+	// and an `e:` search does not lower that floor (only `f:` does), so an
+	// article from a feed set to "show in category only", archived or hidden
+	// would yield an empty page as well. `Z` is every feed, hidden included.
+	//
+	// Base and page URL are passed in so the function stays pure for the tests.
+	function internalUrl(entryId, base, pageHref) {
+		const url = new URL(base, pageHref);
+		url.searchParams.set('get', 'Z');
 		url.searchParams.set('state', '3');
 		url.searchParams.set('search', 'e:' + entryId);
 		return url.href;
+	}
+
+	function indexUrl() {
+		return (window.context && window.context.urls && window.context.urls.index) || './';
 	}
 
 	// The library defaults to a byte encoder that mangles anything outside
@@ -337,7 +347,12 @@
 			}
 		}
 		if (entryId !== '') {
-			targets.push({ key: 'internal', label: t('target_internal'), url: internalUrl(entryId), note: false });
+			targets.push({
+				key: 'internal',
+				label: t('target_internal'),
+				url: internalUrl(entryId, indexUrl(), window.location.href),
+				note: false,
+			});
 		}
 
 		return { targets: targets, removed: cleaned.removed };
@@ -573,6 +588,11 @@
 		close.focus();
 	}
 
+	function labelButton(button) {
+		button.title = t('open');
+		button.setAttribute('aria-label', t('open'));
+	}
+
 	function addButton(flux) {
 		const list = flux.querySelector('ul.horizontal-list.bottom');
 		if (list === null || list.querySelector('.qr-share') !== null) {
@@ -585,8 +605,7 @@
 		// which the reading view's own footer links do not have, so the button
 		// would stretch the line it joins.
 		button.className = 'qr-share-button';
-		button.title = t('open');
-		button.setAttribute('aria-label', t('open'));
+		labelButton(button);
 		button.appendChild(buildIcon(ICON_PATH, 16));
 		button.addEventListener('click', function (ev) {
 			ev.preventDefault();
@@ -675,7 +694,10 @@
 			return;
 		}
 
-		if (ev.ctrlKey || ev.metaKey || ev.altKey || ev.shiftKey ||
+		// `isComposing`: a key that is still part of an IME composition is not
+		// a shortcut. Only reachable in a contenteditable, since the editable
+		// form controls are excluded right below; the core does not check it.
+		if (ev.isComposing || ev.ctrlKey || ev.metaKey || ev.altKey || ev.shiftKey ||
 			(ev.target.closest && ev.target.closest('input, select, textarea'))) {
 			return;
 		}
@@ -721,6 +743,7 @@
 			isTracking: isTracking,
 			isWebLink: isWebLink,
 			escapeBidi: escapeBidi,
+			internalUrl: internalUrl,
 		};
 		return;
 	}
@@ -733,5 +756,12 @@
 	} else {
 		init();
 	}
+	// The core loads main.js with the same `async` as this script, so the global
+	// context may well arrive after the buttons went in — and a button carries
+	// its label as an attribute, which would otherwise keep the English fallback
+	// for good. The overlay is not affected: it reads its strings when opened.
+	document.addEventListener('freshrss:globalContextLoaded', function () {
+		document.querySelectorAll('.qr-share-button').forEach(labelButton);
+	});
 	window.addEventListener('keydown', onKeydown, true);
 })();

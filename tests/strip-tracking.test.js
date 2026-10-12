@@ -234,3 +234,27 @@ test('repeated tracker names are reported once', () => {
 		{ url: 'https://e.example/a?id=1', removed: ['UTM_Source'] }
 	);
 });
+
+// --- Internal permalink -----------------------------------------------------
+// `get=Z` is what keeps the link working for feeds outside the main stream:
+// the default stream filters on `f.priority >= 10`, and an `e:` search does not
+// lower that floor (only `f:` does), so an article from a feed set to "show in
+// category only", archived or hidden would otherwise open an empty page.
+
+const { internalUrl } = require('../static/script.js');
+
+test('the internal permalink carries get=Z, state=3 and the entry id', () => {
+	const url = new URL(internalUrl('1234', './', 'https://rss.example/i/'));
+	assert.equal(url.origin + url.pathname, 'https://rss.example/i/');
+	assert.equal(url.searchParams.get('get'), 'Z');
+	assert.equal(url.searchParams.get('state'), '3');
+	assert.equal(url.searchParams.get('search'), 'e:1234');
+});
+
+test('an index URL that already has a query keeps it', () => {
+	const url = new URL(internalUrl('7', './?c=index&a=index', 'https://rss.example/p/i/'));
+	assert.equal(url.pathname, '/p/i/');
+	assert.equal(url.searchParams.get('c'), 'index');
+	assert.equal(url.searchParams.get('get'), 'Z');
+	assert.equal(url.searchParams.get('search'), 'e:7');
+});

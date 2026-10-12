@@ -3,8 +3,8 @@
 return array(
 	'share_via_qr_code' => array(
 		'open' => 'QR-Code anzeigen',
-		'close' => 'Schliessen',
-		'favourite' => 'Favorisieren und schliessen',
+		'close' => 'Schließen',
+		'favourite' => 'Favorisieren und schließen',
 		'unfavourite' => 'Aus den Favoriten entfernen',
 		'title' => 'Per QR-Code teilen',
 		'error' => 'Die QR-Code-Bibliothek konnte nicht geladen werden. Seite neu laden und erneut versuchen.',
@@ -19,9 +19,9 @@ return array(
 		),
 		'conf' => array(
 			'default_target' => 'Vorausgewählter Link',
-			'default_target_help' => 'Welchen Link das Overlay zuerst zeigt; die anderen bleiben einen Klick entfernt. „Bereinigt“ ist der externe Artikel-Link ohne die bekannten Tracking-Parameter — gab es nichts zu entfernen, heisst derselbe Link im Overlay „Artikel“.',
-			'qr_size' => 'Grösse des QR-Codes',
-			'qr_size_help' => 'Kantenlänge in Pixeln, %d bis %d. Grössere Codes lassen sich aus mehr Abstand scannen; in schmalen Fenstern verkleinert sich der Code ohnehin.',
+			'default_target_help' => 'Welchen Link das Overlay zuerst zeigt; die anderen bleiben einen Klick entfernt. „Bereinigt“ ist der externe Artikel-Link ohne die bekannten Tracking-Parameter — gab es nichts zu entfernen, heißt derselbe Link im Overlay „Artikel“.',
+			'qr_size' => 'Größe des QR-Codes',
+			'qr_size_help' => 'Kantenlänge in Pixeln, %d bis %d. Größere Codes lassen sich aus mehr Abstand scannen; in schmalen Fenstern verkleinert sich der Code ohnehin.',
 		),
 	),
 );

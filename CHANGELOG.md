@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 The version that matters for an installation is the one in `metadata.json`;
 each release is tagged `v<version>`.
 
+## [Unreleased]
+
+### Fixed
+
+- The **FreshRSS view** link opened an empty page for an article from a feed
+  that is not part of the main stream ("show in category only", archived or
+  hidden): the permalink carried no `get`, so the core applied its default
+  `f.priority >= 10` filter, which an `e:` search does not lower. The link now
+  carries `get=Z`.
+- The QR button's tooltip and `aria-label` could stay on the English fallback
+  for the whole page view: the core loads `main.js` with the same `async` as
+  extension scripts, so the global context with the translations may arrive
+  after the buttons went in. The buttons are labelled again on
+  `freshrss:globalContextLoaded`, a pass that 0.6.0 had removed together with
+  the shortcut hint.
+- The shortcut no longer fires on a key that is part of an IME composition
+  inside a contenteditable element (form controls were already excluded).
+
+### Changed
+
+- German strings use the German spelling with ß (Schließen, Größe), matching
+  the core's own translation, instead of the Swiss ss.
+- The size field no longer declares `step="10"`: the browser rejected a value
+  such as 405 that the server accepts.
+
 ## [0.6.0] - 2026-08-04
 
 ### Removed
